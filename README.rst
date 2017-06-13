@@ -1,3 +1,8 @@
+DyNetworkX
+===
+A fork of NetworkX adding the capacity to handle dynamic networks.
+
+Beloew is the orignal README
 NetworkX
 ========
 
