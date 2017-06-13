@@ -1,8 +1,11 @@
-# DyNetworkX
+DyNetworkX
+=========
 A fork of NetworkX adding the capacity to handle dynamic networks.
 
 Below is the original README
-# NetworkX
+
+NetworkX
+========
 
 NetworkX is a Python package for the creation, manipulation, and
 study of the structure, dynamics, and functions of complex networks.
