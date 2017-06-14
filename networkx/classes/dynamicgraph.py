@@ -10,7 +10,7 @@ class DynamicGraph(object):
 
         Parameters
         ----------
-        edgelist : 4-tuple (u,v,start_time, end_time) indicating an edge
+        edgelist : 4-tuple (u,v, start_time, end_time) indicating an edge
             between node u, node v, begining at start_time, and finishing at 
             end_time
         name : string, optional (default='')
@@ -55,10 +55,16 @@ class DynamicGraph(object):
 
             Parameters
             ----------
-            node_dict: {
-                supernode_0: [1, ..., i],
-                ...
-                supernode_n: [1, ..., j],
-            }
+            node_dict: A mapping of supernodes to list of nodes
+                {
+                    supernode_0: [1, ..., i],
+                    ...
+                    supernode_n: [1, ..., j],
+                }
+        """
+        pass
+    
+    def to_snapshots(self, number_of_snapshots):
+        """ Returns number_of_snapshots snapshots
         """
         pass
