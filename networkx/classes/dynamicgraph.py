@@ -49,8 +49,16 @@ class DynamicGraph(object):
         """
         pass
 
-    def coarsen(self):
+    def coarsen(self, node_dict):
         """ Returns a dynamic graph where multiple nodes have been combined 
             together into a supernode
+
+            Parameters
+            ----------
+            node_dict: {
+                supernode_0: [1, ..., i],
+                ...
+                supernode_n: [1, ..., j],
+            }
         """
         pass
