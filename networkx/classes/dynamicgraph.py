@@ -5,7 +5,12 @@ import networkx as nx
 
 class DynamicGraph(object):
 
-    def __init__(self, edgelist, **attr):
+    """ To follow existing convention, we'll assign a variable function for
+        the creation of nodes and edges.  Currently we'll only allow the 
+        default value of dict, but future expansions should allow the use of  
+        custom dict-like objecdts
+    """
+    def __init__(self, **attr):
         """ Initialize a continuous dynamic graph with edges, name, and graph attributes.
 
         Parameters
@@ -18,24 +23,63 @@ class DynamicGraph(object):
         attr : keyword arguments, optional (default= no attributes)
             Attributes to add to graph as key=value pairs.
         """
-        pass
+        # Sorted edge lists
+        self.start_edges = []
+        self.end_edges   = []
+
+        self.graph = {} # graph attributes
+        self.graph.update(attr)
+
+        self.nodes = {} # Nodes in graph
+        self.adj   = {} # adjacency dict
 
     def __str__(self):
-        pass
+        if 'name' in self.graph:
+            return self.graph['name']
+        return self.__hash__()
 
     def __contains__(self, n):
         pass
 
+    def nodes(self):
+        return self.nodes
+
+    def edges(self):
+        return self.start_edges
+
     def add_node(self, n, **attr):
         """ Adds node n to the Dynamic Graph
         """
-        pass
+        if n not in self.nodes:
+            self.nodes[n] = attr
+            self.adj[n] = {}
+        else:
+            self.nodes.update(attr)
 
-    def add_edge(self, u, v, start_time, end_time):
+    def add_edge(self, u, v, dynamic_edge):
         """ Creates an undirected edge between node u and node v,
             begining at start_time and finishing at end_time
+            Parameters
+            ----------
+
+            u: node from
+            v: node to
+            dynamic_edge: dynamic edge object
         """
-        pass
+        if u not in self.nodes:
+            self.nodes[u] = {}
+        if  v not in self.nodes:
+            self.nodes[v] = {}
+
+        if u not in self.nodes[v]:
+            edge_list = []
+            self.nodes[u][v] = edge_list
+            self.nodes[v][u] = edge_list
+
+        self.adj[u][v].append(dynamic_edge)
+        self.start_edges.append(dynamic_edge) 
+        self.end_edges.append(dynamic_edge) 
+
 
     def timestamp_filter(self, start_time, end_time):
         """ Creates a static graph of all nodes and edges that exist between
