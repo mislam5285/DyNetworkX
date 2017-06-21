@@ -56,15 +56,16 @@ class DynamicGraph(object):
         else:
             self.nodes.update(attr)
 
-    def add_edge(self, u, v, dynamic_edge):
+    def add_edge(self, u, v, start_time, end_time, **attrs):
         """ Creates an undirected edge between node u and node v,
             begining at start_time and finishing at end_time
+
             Parameters
             ----------
-
             u: node from
             v: node to
-            dynamic_edge: dynamic edge object
+            start_time: time the edge first appears 
+            end_time: time the edge is no longer present
         """
         if u not in self.nodes:
             self.nodes[u] = {}
@@ -75,6 +76,8 @@ class DynamicGraph(object):
             edge_list = []
             self.nodes[u][v] = edge_list
             self.nodes[v][u] = edge_list
+
+        dynamic_edge = DynamicEdge(start_time, end_time, attrs)
 
         self.adj[u][v].append(dynamic_edge)
         self.start_edges.append(dynamic_edge) 
