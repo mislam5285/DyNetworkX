@@ -15,11 +15,6 @@ class DynamicGraph(object):
 
         Parameters
         ----------
-        edgelist : 4-tuple (u,v, start_time, end_time) indicating an edge
-            between node u, node v, begining at start_time, and finishing at 
-            end_time
-        name : string, optional (default='')
-            An optional name for the graph.
         attr : keyword arguments, optional (default= no attributes)
             Attributes to add to graph as key=value pairs.
         """
