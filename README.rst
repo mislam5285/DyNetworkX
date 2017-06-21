@@ -3,12 +3,15 @@ DyNetworkX
 A fork of NetworkX adding the capacity to handle dynamic networks.
 
 Below is the original README
+
 *** Note:  Make sure to remove the /datasets directory when pushing any commits to github! ***
 
 Local Development
 =================
 
 In order to configure python to load this package over the system networkx, you will likely need to run this command:
+
+::
 
     echo 'PYTHONPATH=$PYTHONPATH:'`pwd` >> .bashrc
 
