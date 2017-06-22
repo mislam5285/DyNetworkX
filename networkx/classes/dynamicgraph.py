@@ -56,7 +56,6 @@ class DynamicGraph(object):
         self.start_edges.sort(key=lambda x: x.start_time)
         self.end_edges.sort(key=lambda x: x.end_time)
 
-
     def add_edge(self, u, v, start_time, end_time, **attrs):
         """ Creates an undirected edge between node u and node v,
             begining at start_time and finishing at end_time
@@ -152,5 +151,14 @@ class DynamicGraph(object):
     
     def to_snapshots(self, number_of_snapshots):
         """ Returns number_of_snapshots snapshots
+
+            Parameters
+            ----------
+            number_of_snapshots: int, the number of snapshots to create
+
+            Return
+            -------
+            A SnapshotGraph with number_of_snapshots snapshots.  This is created
+            by taking the the duration of the graph (last time - first tie)
         """
         pass
