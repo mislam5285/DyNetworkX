@@ -37,10 +37,10 @@ class DynamicGraph(object):
     def __contains__(self, n):
         pass
 
-    def nodes(self):
+    def get_nodes(self):
         return self.nodes
 
-    def edges(self):
+    def get_edges(self):
         return self.start_edges
 
     def add_node(self, n, **attr):
@@ -51,6 +51,11 @@ class DynamicGraph(object):
             self.adj[n] = {}
         else:
             self.nodes.update(attr)
+
+    def sort_edges(self):
+        self.start_edges.sort(key=lambda x: x.start_time)
+        self.end_edges.sort(key=lambda x: x.end_time)
+
 
     def add_edge(self, u, v, start_time, end_time, **attrs):
         """ Creates an undirected edge between node u and node v,
