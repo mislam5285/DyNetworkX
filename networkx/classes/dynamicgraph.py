@@ -68,6 +68,10 @@ class DynamicGraph(object):
             start_time: time the edge first appears 
             end_time: time the edge is no longer present
         """
+        dynamic_edge = DynamicEdge(start_time, end_time, **attrs)
+        self.add_dynamic_edge(u, v, dynamic_edge)
+
+    def add_dynamic_edge(self, u, v, dynamic_edge):
         if u not in self.nodes:
             self.add_node(u)
         if  v not in self.nodes:
@@ -78,19 +82,36 @@ class DynamicGraph(object):
             self.adj[u][v] = edge_list
             self.adj[v][u] = edge_list
 
-        dynamic_edge = DynamicEdge(start_time, end_time, attrs)
-
         self.adj[u][v].append(dynamic_edge)
         self.adj[v][u].append(dynamic_edge)
         self.start_edges.append(dynamic_edge) 
         self.end_edges.append(dynamic_edge) 
 
+    def add_dynamic_edges_from(self, ebunch):
+        for edge in ebunch:
+            self.add_dynamic_edge(edge)
 
     def timestamp_filter(self, start_time, end_time):
         """ Creates a static graph of all nodes and edges that exist between
             start_time and end_time
+            
+            Parameters
+            ----------
+            start_time: the beginging time of the filter
+            end_Time: the end time of the filter
+
+            Returns
+            -------
+            A dynamic graph with the same graph attributes, and only edges that
+            start on or after start_time, and edges that finish before or on
+            end_time
         """
-        pass
+        G = DynamicGraph(**self.graph)
+        new_edges = filter(lambda x: x.start_time >= start_time,
+                self.start_edges)
+        new_edges = filter(lambda x: x.end_time <= end_time, self.end_edges)
+        G.add_dynamic_edges_from(new_edges)
+        return G
 
     def node_filter(self, nbunch):
         """ Creates a dynamic subgraph consisting of only nodges and edges that
