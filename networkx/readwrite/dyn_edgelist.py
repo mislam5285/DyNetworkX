@@ -10,10 +10,20 @@ from networkx.classes.dynamicgraph import DynamicGraph
 def read_edgelist(filename, _type='discrete'):
     G = DynamicGraph()
     with open(filename, 'r') as r:
+        # operating under the assumption that there is a triplet
+        # with all integers
         for line in r.readlines():
-            print line
+            items = line.strip().split(',')
+            u = int(items[0])
+            v = int(items[1])
+            start_time = int(items[2])
+            if len(items) == 3:
+                end_time = start_time
+            else:
+                end_time = items[3]
+
+            G.add_edge(u, v, start_time, end_time)
 
 if __name__ == '__main__':
-    print 'ehlo'
     read_edgelist('../../datasets/RealityMiningCallSmsDataUnsorted.csv')
 
