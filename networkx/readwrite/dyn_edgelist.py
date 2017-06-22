@@ -7,7 +7,7 @@
 import networkx as nx
 from networkx.classes.dynamicgraph import DynamicGraph
 
-def read_edgelist(filename, _type='discrete'):
+def read_edgelist(filename):
     G = DynamicGraph()
     with open(filename, 'r') as r:
         # operating under the assumption that there is a triplet
@@ -26,4 +26,3 @@ def read_edgelist(filename, _type='discrete'):
 
 if __name__ == '__main__':
     read_edgelist('../../datasets/RealityMiningCallSmsDataUnsorted.csv')
-
