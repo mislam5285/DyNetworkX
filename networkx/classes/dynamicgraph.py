@@ -35,7 +35,12 @@ class DynamicGraph(object):
         return self.__hash__()
 
     def __contains__(self, n):
-        pass
+        """Return True if n is a node, False otherwise. Use the expression 'n in G'.
+        """
+        try:
+            return n in self.nodes
+        except TypeError:
+            return False
 
     def get_nodes(self):
         return self.nodes
@@ -46,7 +51,7 @@ class DynamicGraph(object):
     def add_node(self, n, **attr):
         """ Adds node n to the Dynamic Graph
         """
-        if n not in self.nodes:
+        if n not in self:
             self.nodes[n] = attr
             self.adj[n] = {}
         else:
@@ -68,9 +73,9 @@ class DynamicGraph(object):
             start_time: time the edge first appears 
             end_time: time the edge is no longer present
         """
-        if u not in self.nodes:
+        if u not in self:
             self.add_node(u)
-        if  v not in self.nodes:
+        if  v not in self:
             self.add_node(v)
 
         if u not in self.adj[v]:
