@@ -116,8 +116,23 @@ class DynamicGraph(object):
     def node_filter(self, nbunch):
         """ Creates a dynamic subgraph consisting of only nodges and edges that
             are in nbunch
+
+            Parameters
+            ----------
+            nbunch: nodes that should be included in the subgraph
+
+            Returns
+            -------
+            A dynamic graph only populated nodes specified in nbunch
         """
-        pass
+        G = DynamicGraph(self.graph)
+        for node in nbunch:
+            G.add_node(node, self.nodes[node])
+            for neighbor_node in set(nbunch).intersection(self.nodes[node])
+                G.add_node(neighbor_node, self.nodes[neighbor_node])
+                dynamic_edge = self.nodes[node][neighbor_node]
+                G.add_dynamic_edge(node, neighbor_node,dynamic_edge)
+        return G
 
     def coarsen(self, node_dict):
         """ Returns a dynamic graph where multiple nodes have been combined 
@@ -125,6 +140,7 @@ class DynamicGraph(object):
 
             Parameters
             ----------
+
             node_dict: A mapping of supernodes to list of nodes
                 {
                     supernode_0: [1, ..., i],
