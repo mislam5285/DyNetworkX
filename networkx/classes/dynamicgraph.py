@@ -2,6 +2,7 @@
 
 """
 import networkx as nx
+from networkx.classes.dynamic_edge import DynamicEdge
 
 class DynamicGraph(object):
 
@@ -63,18 +64,19 @@ class DynamicGraph(object):
             end_time: time the edge is no longer present
         """
         if u not in self.nodes:
-            self.nodes[u] = {}
+            self.add_node(u)
         if  v not in self.nodes:
-            self.nodes[v] = {}
+            self.add_node(v)
 
-        if u not in self.nodes[v]:
+        if u not in self.adj[v]:
             edge_list = []
-            self.nodes[u][v] = edge_list
-            self.nodes[v][u] = edge_list
+            self.adj[u][v] = edge_list
+            self.adj[v][u] = edge_list
 
         dynamic_edge = DynamicEdge(start_time, end_time, attrs)
 
         self.adj[u][v].append(dynamic_edge)
+        self.adj[v][u].append(dynamic_edge)
         self.start_edges.append(dynamic_edge) 
         self.end_edges.append(dynamic_edge) 
 
