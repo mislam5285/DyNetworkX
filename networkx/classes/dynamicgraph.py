@@ -35,7 +35,12 @@ class DynamicGraph(object):
         return self.__hash__()
 
     def __contains__(self, n):
-        pass
+        """Return True if n is a node, False otherwise. Use the expression 'n in G'.
+        """
+        try:
+            return n in self.nodes
+        except TypeError:
+            return False
 
     def get_nodes(self):
         return self.nodes
@@ -46,7 +51,7 @@ class DynamicGraph(object):
     def add_node(self, n, **attr):
         """ Adds node n to the Dynamic Graph
         """
-        if n not in self.nodes:
+        if n not in self:
             self.nodes[n] = attr
             self.adj[n] = {}
         else:
@@ -71,9 +76,9 @@ class DynamicGraph(object):
         self.add_dynamic_edge(u, v, dynamic_edge)
 
     def add_dynamic_edge(self, u, v, dynamic_edge):
-        if u not in self.nodes:
+        if u not in self:
             self.add_node(u)
-        if  v not in self.nodes:
+        if  v not in self:
             self.add_node(v)
 
         if u not in self.adj[v]:
@@ -127,7 +132,7 @@ class DynamicGraph(object):
         G = DynamicGraph(self.graph)
         for node in nbunch:
             G.add_node(node, self.nodes[node])
-            for neighbor_node in set(nbunch).intersection(self.nodes[node])
+            for neighbor_node in set(nbunch).intersection(self.nodes[node]):
                 G.add_node(neighbor_node, self.nodes[neighbor_node])
                 dynamic_edge = self.nodes[node][neighbor_node]
                 G.add_dynamic_edge(node, neighbor_node,dynamic_edge)
