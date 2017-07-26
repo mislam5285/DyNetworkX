@@ -13,7 +13,7 @@ In order to configure python to load this package over the system networkx, you 
 
 ::
 
-    echo 'PYTHONPATH=$PYTHONPATH:'`pwd` >> .bashrc
+    echo 'export PYTHONPATH=$PYTHONPATH:'`pwd` >> ~/.bashrc
 
 from the same directory as the README file
 
