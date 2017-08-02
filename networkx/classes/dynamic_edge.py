@@ -12,7 +12,7 @@ class DynamicEdge(object):
     def within_snapshot_window(self, snapshot_start, snapshot_end):
         if self.end_time >= snapshot_start and self.end_time <= snapshot_end:
             return True
-        if self.start_time =< snapshot_end and self.start_time >= snapshot_start:
+        if self.start_time <= snapshot_end and self.start_time >= snapshot_start:
             return True
         if self.start_time >= snapshot_start and self.end_time <= snapshot_end:
             return True
