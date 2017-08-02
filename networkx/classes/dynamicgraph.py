@@ -93,8 +93,15 @@ class DynamicGraph(object):
         self.end_edges.append(dynamic_edge) 
 
     def add_dynamic_edges_from(self, ebunch):
-        for edge in ebunch:
-            self.add_dynamic_edge(edge)
+        """ Adds edges from an iterable ebunch to the DynamicGraph
+
+            Parameters
+            ----------
+            ebunch: an iterable tuple (u, v, dynamic_edge)
+
+        """
+        for u, v, dynamic_edge in ebunch:
+            self.add_dynamic_edge(u, v, dynamic_edge)
 
     def timestamp_filter(self, start_time, end_time):
         """ Creates a static graph of all nodes and edges that exist between
@@ -112,9 +119,13 @@ class DynamicGraph(object):
             end_time
         """
         G = DynamicGraph(**self.graph)
-        new_edges = filter(lambda x: x.start_time >= start_time,
-                self.start_edges)
-        new_edges = filter(lambda x: x.end_time <= end_time, self.end_edges)
+        edges = []
+        for u in self.adj.keys:
+            for v in self.adj[u]:
+                for dynamic_edge in self.adj[u][v]:
+                    if dynamic_edge.within_snapshot_window(snapshot_start, snapshot_end):
+                        edge = (u, v, dynamic_edge)
+                        edges.append(edge)
         G.add_dynamic_edges_from(new_edges)
         return G
 
