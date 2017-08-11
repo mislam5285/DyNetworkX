@@ -3,6 +3,7 @@
 """
 import networkx as nx
 from networkx.classes.dynamic_edge import DynamicEdge
+from networkx.classes.snapshotgraph import SnapshotGraph
 
 class DynamicGraph(object):
 
@@ -94,8 +95,15 @@ class DynamicGraph(object):
         self.end_edges.append(dynamic_edge) 
 
     def add_dynamic_edges_from(self, ebunch):
-        for edge in ebunch:
-            self.add_dynamic_edge(edge)
+        """ Adds edges from an iterable ebunch to the DynamicGraph
+
+            Parameters
+            ----------
+            ebunch: an iterable tuple (u, v, dynamic_edge)
+
+        """
+        for u, v, dynamic_edge in ebunch:
+            self.add_dynamic_edge(u, v, dynamic_edge)
 
     def timestamp_filter(self, start_time, end_time):
         """ Creates a static graph of all nodes and edges that exist between
@@ -113,9 +121,13 @@ class DynamicGraph(object):
             end_time
         """
         G = DynamicGraph(**self.graph)
-        new_edges = filter(lambda x: x.start_time >= start_time,
-                self.start_edges)
-        new_edges = filter(lambda x: x.end_time <= end_time, self.end_edges)
+        edges = []
+        for u in self.adj.keys:
+            for v in self.adj[u]:
+                for dynamic_edge in self.adj[u][v]:
+                    if dynamic_edge.within_snapshot_window(snapshot_start, snapshot_end):
+                        edge = (u, v, dynamic_edge)
+                        edges.append(edge)
         G.add_dynamic_edges_from(new_edges)
         return G
 
@@ -166,6 +178,26 @@ class DynamicGraph(object):
             Return
             -------
             A SnapshotGraph with number_of_snapshots snapshots.  This is created
-            by taking the the duration of the graph (last time - first tie)
+            by taking the the duration of the graph (last time - first time)
         """
-        pass
+
+        snapshot_graph = SnapshotGraph(**self.graph)
+
+        start_time     = self.start_edges[0].start_time
+        end_time       = self.end_edges[-1].end_time
+        total_duration = end_time - start_time
+        snapshot_size  = total_duration / number_of_snapshots
+
+        for i in range(number_of_snapshots):
+            snapshot_end = i * snapshot_size
+            snapshot_start = snapshot_end - snapshot_size
+            edges = []
+            for u in self.adj.keys:
+                for v in self.adj[u]:
+                    for dynamic_edge in self.adj[u][v]:
+                        if dynamic_edge.within_snapshot_window(snapshot_start, snapshot_end):
+                            weight = dynamic_edge.weight_within_snapshot_window(snapshot_start, snapshot_end, snapshot_size)
+                            edge = (u, v, weight)
+                            edges.append(edge)
+            snapshot_graph.add_snapshot(edges)
+        return snapshot_graph
