@@ -24,9 +24,7 @@ def read_edgelist(filename):
                 end_time = items[3]
 
             G.add_edge(u, v, start_time, end_time)
-    G.sort_edges()
     return G
 
 if __name__ == '__main__':
     G = read_edgelist('../../datasets/RealityMiningCallSmsDataUnsorted.csv')
-    print('helo')

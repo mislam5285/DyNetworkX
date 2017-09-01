@@ -21,8 +21,6 @@ class DynamicGraph(object):
             Attributes to add to graph as key=value pairs.
         """
         # Sorted edge lists
-        self.start_edges = []
-        self.end_edges   = []
 
         self.graph = {} # graph attributes
         self.graph.update(attr)
@@ -49,7 +47,7 @@ class DynamicGraph(object):
         return self.nodes
 
     def get_edges(self):
-        return self.start_edges
+        raise NotImplementedError
 
     def add_node(self, n, **attr):
         """ Adds node n to the Dynamic Graph
@@ -59,10 +57,6 @@ class DynamicGraph(object):
             self.adj[n] = {}
         else:
             self.nodes.update(attr)
-
-    def sort_edges(self):
-        self.start_edges.sort(key=lambda x: x.start_time)
-        self.end_edges.sort(key=lambda x: x.end_time)
 
     def add_edge(self, u, v, start_time, end_time, **attrs):
         """ Creates an undirected edge between node u and node v,
@@ -91,8 +85,6 @@ class DynamicGraph(object):
 
         self.adj[u][v].append(dynamic_edge)
         self.adj[v][u].append(dynamic_edge)
-        self.start_edges.append(dynamic_edge) 
-        self.end_edges.append(dynamic_edge) 
 
     def add_dynamic_edges_from(self, ebunch):
         """ Adds edges from an iterable ebunch to the DynamicGraph
