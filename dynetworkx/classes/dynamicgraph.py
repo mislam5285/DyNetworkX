@@ -29,6 +29,7 @@ class DynamicGraph(object):
         self.adj   = {} # adjacency dict
 
         self.start_time = None
+        self.end_time = None
 
     def __str__(self):
         if 'name' in self.graph:
@@ -69,6 +70,17 @@ class DynamicGraph(object):
             start_time: time the edge first appears 
             end_time: time the edge is no longer present
         """
+
+        # It's helpful to keep track of when the earliest and latest time is
+        if self.start_time is None:
+            self.start_time = start_time
+
+        if self.end_time is None:
+            self.end_time = end_time
+
+        self.start_time = start_time if start_time < self.start_time else self.start_time
+        self.end_time = end_time if end_time > self.end_time else self.end_time
+
         dynamic_edge = DynamicEdge(start_time, end_time, **attrs)
         self.add_dynamic_edge(u, v, dynamic_edge)
 
@@ -175,8 +187,8 @@ class DynamicGraph(object):
 
         snapshot_graph = SnapshotGraph(**self.graph)
 
-        start_time     = self.start_edges[0].start_time
-        end_time       = self.end_edges[-1].end_time
+        start_time     = self.start_time
+        end_time       = self.end_time
         total_duration = end_time - start_time
         snapshot_size  = total_duration / number_of_snapshots
 
