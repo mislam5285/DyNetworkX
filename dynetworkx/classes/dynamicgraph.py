@@ -2,8 +2,8 @@
 
 """
 import networkx as nx
-from networkx.classes.dynamic_edge import DynamicEdge
-from networkx.classes.snapshotgraph import SnapshotGraph
+from dynetworkx.classes.dynamic_edge import DynamicEdge
+from dynetworkx.classes.snapshotgraph import SnapshotGraph
 
 class DynamicGraph(object):
 

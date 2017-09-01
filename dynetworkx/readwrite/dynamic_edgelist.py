@@ -6,7 +6,7 @@ from __future__ import print_function
     Date Last Modified:
 '''
 import networkx as nx
-from networkx.classes.dynamicgraph import DynamicGraph
+from dynetworkx.classes.dynamicgraph import DynamicGraph
 
 def read_edgelist(filename):
     G = DynamicGraph()
