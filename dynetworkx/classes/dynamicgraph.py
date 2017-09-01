@@ -30,6 +30,8 @@ class DynamicGraph(object):
         self.nodes = {} # Nodes in graph
         self.adj   = {} # adjacency dict
 
+        self.start_time = None
+
     def __str__(self):
         if 'name' in self.graph:
             return self.graph['name']
