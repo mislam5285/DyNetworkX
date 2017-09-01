@@ -6,6 +6,7 @@ from nose.tools import assert_true
 from nose.tools import raises
 
 import networkx
+from dynetworkx.classes.dynamicgraph import DynamicGraph
 
 class TestDynamicGraph(object):
     """ Tests dynamic graph class"""
