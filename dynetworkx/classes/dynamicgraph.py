@@ -2,8 +2,8 @@
 
 """
 import networkx as nx
-from networkx.classes.dynamic_edge import DynamicEdge
-from networkx.classes.snapshotgraph import SnapshotGraph
+from dynetworkx.classes.dynamic_edge import DynamicEdge
+from dynetworkx.classes.snapshotgraph import SnapshotGraph
 
 class DynamicGraph(object):
 
@@ -21,8 +21,6 @@ class DynamicGraph(object):
             Attributes to add to graph as key=value pairs.
         """
         # Sorted edge lists
-        self.start_edges = []
-        self.end_edges   = []
 
         self.graph = {} # graph attributes
         self.graph.update(attr)
@@ -31,6 +29,7 @@ class DynamicGraph(object):
         self.adj   = {} # adjacency dict
 
         self.start_time = None
+        self.end_time = None
 
     def __str__(self):
         if 'name' in self.graph:
@@ -49,7 +48,7 @@ class DynamicGraph(object):
         return self.nodes
 
     def get_edges(self):
-        return self.start_edges
+        raise NotImplementedError
 
     def add_node(self, n, **attr):
         """ Adds node n to the Dynamic Graph
@@ -59,10 +58,6 @@ class DynamicGraph(object):
             self.adj[n] = {}
         else:
             self.nodes.update(attr)
-
-    def sort_edges(self):
-        self.start_edges.sort(key=lambda x: x.start_time)
-        self.end_edges.sort(key=lambda x: x.end_time)
 
     def add_edge(self, u, v, start_time, end_time, **attrs):
         """ Creates an undirected edge between node u and node v,
@@ -75,6 +70,17 @@ class DynamicGraph(object):
             start_time: time the edge first appears 
             end_time: time the edge is no longer present
         """
+
+        # It's helpful to keep track of when the earliest and latest time is
+        if self.start_time is None:
+            self.start_time = start_time
+
+        if self.end_time is None:
+            self.end_time = end_time
+
+        self.start_time = start_time if start_time < self.start_time else self.start_time
+        self.end_time = end_time if end_time > self.end_time else self.end_time
+
         dynamic_edge = DynamicEdge(start_time, end_time, **attrs)
         self.add_dynamic_edge(u, v, dynamic_edge)
 
@@ -91,8 +97,6 @@ class DynamicGraph(object):
 
         self.adj[u][v].append(dynamic_edge)
         self.adj[v][u].append(dynamic_edge)
-        self.start_edges.append(dynamic_edge) 
-        self.end_edges.append(dynamic_edge) 
 
     def add_dynamic_edges_from(self, ebunch):
         """ Adds edges from an iterable ebunch to the DynamicGraph
@@ -187,8 +191,8 @@ class DynamicGraph(object):
 
         snapshot_graph = SnapshotGraph(**self.graph)
 
-        start_time     = self.start_edges[0].start_time
-        end_time       = self.end_edges[-1].end_time
+        start_time     = self.start_time
+        end_time       = self.end_time
         total_duration = end_time - start_time
         snapshot_size  = total_duration / number_of_snapshots
 
