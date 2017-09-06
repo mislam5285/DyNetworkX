@@ -170,6 +170,10 @@ class DynamicGraph(object):
     
     def to_snapshots(self, number_of_snapshots):
         """ Returns number_of_snapshots snapshots
+        TODO:
+            Look into changing the signature from number_of_snapshots to snapshot_window_size
+            Use python datetime object
+            Use 
 
             Parameters
             ----------
