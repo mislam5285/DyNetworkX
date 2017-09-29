@@ -2,6 +2,7 @@
 
 """
 import networkx as nx
+from dynetworkx.classes.helpers import timer
 from dynetworkx.classes.dynamic_edge import DynamicEdge
 from dynetworkx.classes.snapshotgraph import SnapshotGraph
 
@@ -135,6 +136,7 @@ class DynamicGraph(object):
         G.add_dynamic_edges_from(new_edges)
         return G
 
+    @timer
     def edge_count_filter(self, min_edge_count):
         nodes_to_delete = []
         for u, neighbors in self.adj.items():

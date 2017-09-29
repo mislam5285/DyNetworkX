@@ -7,6 +7,7 @@ from __future__ import print_function
 '''
 import networkx as nx
 from dynetworkx.classes.dynamicgraph import DynamicGraph
+from dynetworkx.classes.helpers import timer
 import csv
 from datetime import datetime
 import time
@@ -29,6 +30,7 @@ def read_edgelist(filename):
             G.add_edge(u, v, start_time, end_time)
     return G
 
+@timer
 def read_triplet_timestamp(filename):
     G = DynamicGraph()
     with open(filename, 'r') as r:
@@ -45,6 +47,4 @@ def read_triplet_timestamp(filename):
 if __name__ == '__main__':
     #G = read_edgelist('../../datasets/RealityMiningCallSmsDataUnsorted.csv')
     G = read_triplet_timestamp('../../datasets/hurricaneSandy2012-exported-2017-08-22.csv')
-    print (len(G.get_nodes()))
     G.edge_count_filter(10)
-    print (len(G.get_nodes()))
