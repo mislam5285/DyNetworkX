@@ -45,3 +45,6 @@ def read_triplet_timestamp(filename):
 if __name__ == '__main__':
     #G = read_edgelist('../../datasets/RealityMiningCallSmsDataUnsorted.csv')
     G = read_triplet_timestamp('../../datasets/hurricaneSandy2012-exported-2017-08-22.csv')
+    print (len(G.get_nodes()))
+    G.edge_count_filter(10)
+    print (len(G.get_nodes()))

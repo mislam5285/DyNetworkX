@@ -135,6 +135,27 @@ class DynamicGraph(object):
         G.add_dynamic_edges_from(new_edges)
         return G
 
+    def edge_count_filter(self, min_edge_count):
+        nodes_to_delete = []
+        for u, neighbors in self.adj.items():
+            edge_count = 0
+            # count the number of dynamic edges each v has 
+            for v, dynamic_edge_list in neighbors.items():
+                edge_count += len(dynamic_edge_list)
+
+            if edge_count < min_edge_count:
+                nodes_to_delete.append(u)
+
+        for node in nodes_to_delete:
+            del self.nodes[node]
+
+            neighbors = self.adj[node].keys()
+            for neighbor in list(neighbors):
+                if neighbor in self.adj:
+                    del self.adj[neighbor][node]
+
+            del self.adj[node]
+
     def node_filter(self, nbunch):
         """ Creates a dynamic subgraph consisting of only nodges and edges that
             are in nbunch
