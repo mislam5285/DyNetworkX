@@ -11,6 +11,17 @@ class SnapshotGraph(object):
         g.add_weighted_edges_from(edges)
         self.snapshots.append(g)
 
+    def subgraph(self, nodes):
+        """ Nodes is a list of nodes that should be found in each subgraph"""
+        if len(nodes) != len(self.snapshots):
+            raise ValueError('node list({}) must be equal in length to number of snapshots({})'.format(len(nodes), len(self.snapshots)))
+
+        subgraph = SnapshotGraph()
+        for snapshot, node_list in zip(self.snapshots, nodes):
+            subgraph.snapshots.append(snapshot.subgraph(node_list))
+        subgraph.graph = self.graph
+        return subgraph
+
     def degree(self):
         return [g.degree() for g in self.snapshots]
 
