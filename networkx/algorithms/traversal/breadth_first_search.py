@@ -1,6 +1,6 @@
 # breadth_first_search.py - breadth-first traversal of a graph
 #
-# Copyright (C) 2004-2016 NetworkX Developers
+# Copyright (C) 2004-2018 NetworkX Developers
 #   Aric Hagberg <hagberg@lanl.gov>
 #   Dan Schult <dschult@colgate.edu>
 #   Pieter Swart <swart@lanl.gov>
@@ -21,7 +21,7 @@ __all__ = ['bfs_edges', 'bfs_tree', 'bfs_predecessors', 'bfs_successors']
 
 
 def generic_bfs_edges(G, source, neighbors=None):
-    """Iterates over edges in a breadth-first search.
+    """Iterate over edges in a breadth-first search.
 
     The breadth-first search begins at `source` and enqueues the
     neighbors of newly visited nodes specified by the `neighbors`
@@ -78,7 +78,7 @@ def generic_bfs_edges(G, source, neighbors=None):
 
 
 def bfs_edges(G, source, reverse=False):
-    """Produce edges in a breadth-first-search starting at source.
+    """Iterate over edges in a breadth-first-search starting at source.
 
     Parameters
     ----------

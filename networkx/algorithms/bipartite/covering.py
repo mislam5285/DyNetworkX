@@ -1,4 +1,4 @@
-#    Copyright 2016 NetworkX developers.
+#    Copyright 2016-2018 NetworkX developers.
 #    Copyright (C) 2016 by
 #    Nishant Nikhil <nishantiam@gmail.com>
 #    All rights reserved.
@@ -6,8 +6,7 @@
 
 """ Functions related to graph covers."""
 
-import networkx as nx
-from networkx.utils import not_implemented_for, arbitrary_element
+from networkx.utils import not_implemented_for
 from networkx.algorithms.bipartite.matching import hopcroft_karp_matching
 from networkx.algorithms.covering import min_edge_cover as _min_edge_cover
 
@@ -55,7 +54,7 @@ def min_edge_cover(G, matching_algorithm=None):
     is bounded by the worst-case running time of the function
     ``matching_algorithm``.
     """
-    if G.order() == 0: # Special case for the empty graph
+    if G.order() == 0:  # Special case for the empty graph
         return set()
     if matching_algorithm is None:
         matching_algorithm = hopcroft_karp_matching
