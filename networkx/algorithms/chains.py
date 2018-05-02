@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 # chains.py - functions for finding chains in a graph
 #
-# Copyright 2004-2016 NetworkX developers.
+# Copyright 2004-2018 NetworkX developers.
 #
 # This file is part of NetworkX.
 #
 # NetworkX is distributed under a BSD license; see LICENSE.txt for more
 # information.
 """Functions for finding chains in a graph."""
-from itertools import islice
 
 import networkx as nx
 from networkx.utils import not_implemented_for
@@ -61,7 +60,7 @@ def chain_decomposition(G, root=None):
     ----------
     .. [1] Jens M. Schmidt (2013). "A simple test on 2-vertex-
        and 2-edge-connectivity." *Information Processing Letters*,
-       113, 241–244. Elsevier. <http://dx.doi.org/10.1016/j.ipl.2013.01.016>
+       113, 241–244. Elsevier. <https://doi.org/10.1016/j.ipl.2013.01.016>
 
     """
 
@@ -140,7 +139,7 @@ def chain_decomposition(G, root=None):
         while v not in visited:
             yield u, v
             visited.add(v)
-            u, v = v, G.node[v]['parent']
+            u, v = v, G.nodes[v]['parent']
         yield u, v
 
     # Create a directed version of H that has the DFS edges directed

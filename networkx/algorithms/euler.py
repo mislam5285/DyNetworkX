@@ -50,8 +50,8 @@ def is_eulerian(G):
     if G.is_directed():
         # Every node must have equal in degree and out degree and the
         # graph must be strongly connected
-        return (all(G.in_degree(n) == G.out_degree(n) for n in G)
-                and nx.is_strongly_connected(G))
+        return (all(G.in_degree(n) == G.out_degree(n) for n in G) and
+                nx.is_strongly_connected(G))
     # An undirected Eulerian graph has no vertices of odd degree and
     # must be connected.
     return all(d % 2 == 0 for v, d in G.degree()) and nx.is_connected(G)
@@ -74,7 +74,7 @@ def _simplegraph_eulerian_circuit(G, source):
             last_vertex = current_vertex
             vertex_stack.pop()
         else:
-            _, next_vertex = next(edges(current_vertex))
+            _, next_vertex = arbitrary_element(edges(current_vertex))
             vertex_stack.append(next_vertex)
             G.remove_edge(current_vertex, next_vertex)
 
@@ -97,7 +97,7 @@ def _multigraph_eulerian_circuit(G, source):
             last_vertex, last_key = current_vertex, current_key
             vertex_stack.pop()
         else:
-            _, next_vertex, next_key = next(edges(current_vertex, keys=True))
+            _, next_vertex, next_key = arbitrary_element(edges(current_vertex, keys=True))
             vertex_stack.append((next_vertex, next_key))
             G.remove_edge(current_vertex, next_vertex, next_key)
 
@@ -146,7 +146,7 @@ def eulerian_circuit(G, source=None, keys=False):
     .. [1] J. Edmonds, E. L. Johnson.
        Matching, Euler tours and the Chinese postman.
        Mathematical programming, Volume 5, Issue 1 (1973), 111-114.
-    .. [2] http://en.wikipedia.org/wiki/Eulerian_path
+    .. [2] https://en.wikipedia.org/wiki/Eulerian_path
 
     Examples
     --------
@@ -166,9 +166,10 @@ def eulerian_circuit(G, source=None, keys=False):
     """
     if not is_eulerian(G):
         raise nx.NetworkXError("G is not Eulerian.")
-    G = G.__class__(G)
     if G.is_directed():
-        G.reverse(copy=False)
+        G = G.reverse()
+    else:
+        G = G.copy()
     if source is None:
         source = arbitrary_element(G)
     if G.is_multigraph():

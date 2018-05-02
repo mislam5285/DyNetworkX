@@ -1,4 +1,4 @@
-#    Copyright (C) 2011-2016 by
+#    Copyright (C) 2011-2018 by
 #
 #    Aric Hagberg <hagberg@lanl.gov>
 #    Dan Schult <dschult@colgate.edu>
@@ -8,10 +8,8 @@
 #    All rights reserved.
 #    BSD license.
 from itertools import chain, count
-import json
 import networkx as nx
 from networkx.utils import make_str, to_tuple
-from tempfile import NamedTemporaryFile
 __all__ = ['node_link_data', 'node_link_graph']
 
 
@@ -89,7 +87,7 @@ def node_link_data(G, attrs=None):
     if len({source, target, key}) < 3:
         raise nx.NetworkXError('Attribute names are not unique.')
     data = {'directed': G.is_directed(), 'multigraph': multigraph, 'graph': G.graph,
-            'nodes': [dict(chain(G.node[n].items(), [(name, n)])) for n in G]}
+            'nodes': [dict(chain(G.nodes[n].items(), [(name, n)])) for n in G]}
     if multigraph:
         data[links] = [
             dict(chain(d.items(),

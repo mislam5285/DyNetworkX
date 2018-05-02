@@ -1,6 +1,6 @@
 # quality.py - functions for measuring partitions of a graph
 #
-# Copyright 2015-2016 NetworkX developers.
+# Copyright 2015-2018 NetworkX developers.
 #
 # This file is part of NetworkX.
 #
@@ -18,6 +18,7 @@ from itertools import product
 import networkx as nx
 from networkx import NetworkXError
 from networkx.utils import not_implemented_for
+from networkx.algorithms.community.community_utils import is_partition
 
 __all__ = ['coverage', 'modularity', 'performance']
 
@@ -31,27 +32,6 @@ class NotAPartition(NetworkXError):
         msg = '{} is not a valid partition of the graph {}'
         msg = msg.format(G, collection)
         super(NotAPartition, self).__init__(msg)
-
-
-def is_partition(G, partition):
-    """Returns True if and only if `partition` is a partition of
-    the nodes of `G`.
-
-    A partition of a universe set is a family of pairwise disjoint sets
-    whose union equals the universe set.
-
-    `G` is a NetworkX graph.
-
-    `partition` is a sequence (not an iterator) of sets of nodes of
-    `G`.
-
-    """
-    # Alternate implementation:
-    #
-    #     return (len(G) == sum(len(c) for c in community) and
-    #             set(G) == set().union(*community))
-    #
-    return all(sum(1 if v in c else 0 for c in partition) == 1 for v in G)
 
 
 def require_partition(func):
@@ -134,7 +114,10 @@ def inter_community_edges(G, partition):
     #                                    for block in partition))
     #     return sum(1 for u, v in G.edges() if aff[u] != aff[v])
     #
-    return nx.quotient_graph(G, partition, create_using=nx.MultiGraph()).size()
+    if G.is_directed():
+        return nx.quotient_graph(G, partition, create_using=nx.MultiDiGraph()).size()
+    else:
+        return nx.quotient_graph(G, partition, create_using=nx.MultiGraph()).size()
 
 
 def inter_community_non_edges(G, partition):
@@ -201,7 +184,7 @@ def performance(G, partition):
     .. [1] Santo Fortunato.
            "Community Detection in Graphs".
            *Physical Reports*, Volume 486, Issue 3--5 pp. 75--174
-           <http://arxiv.org/abs/0906.0612>
+           <https://arxiv.org/abs/0906.0612>
 
     """
     # Compute the number of intra-community edges and inter-community
@@ -256,7 +239,7 @@ def coverage(G, partition):
     .. [1] Santo Fortunato.
            "Community Detection in Graphs".
            *Physical Reports*, Volume 486, Issue 3--5 pp. 75--174
-           <http://arxiv.org/abs/0906.0612>
+           <https://arxiv.org/abs/0906.0612>
 
     """
     intra_edges = intra_community_edges(G, partition)
@@ -274,9 +257,9 @@ def modularity(G, communities, weight='weight'):
         Q = \frac{1}{2m} \sum_{ij} \left( A_{ij} - \frac{k_ik_j}{2m}\right)
             \delta(c_i,c_j)
 
-    where *m* is the number of edges, *A* is the adjacency matrix of
-    `G`, :math:`k_i` is the degree of *i* and :math:`\delta(c_i, c_j)`
-    is 1 if *i* and *j* are in the same community and 0 otherwise.
+    where $m$ is the number of edges, $A$ is the adjacency matrix of
+    `G`, $k_i$ is the degree of $i$ and $\delta(c_i, c_j)$
+    is 1 if $i$ and $j$ are in the same community and 0 otherwise.
 
     Parameters
     ----------
@@ -299,7 +282,7 @@ def modularity(G, communities, weight='weight'):
     Examples
     --------
     >>> G = nx.barbell_graph(3, 0)
-    >>> nx.modularity(G, [{0, 1, 2}, {3, 4, 5}])
+    >>> nx.algorithms.community.modularity(G, [{0, 1, 2}, {3, 4, 5}])
     0.35714285714285704
 
     References

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#    Copyright (C) 2004-2016 by
+#    Copyright (C) 2004-2018 by
 #    Aric Hagberg <hagberg@lanl.gov>
 #    Dan Schult <dschult@colgate.edu>
 #    Pieter Swart <swart@lanl.gov>
@@ -51,16 +51,16 @@ def extrema_bounding(G, compute="diameter"):
     F.W. Takes and W.A. Kosters, Determining the Diameter of Small World
     Networks, in Proceedings of the 20th ACM International Conference on
     Information and Knowledge Management (CIKM 2011), pp. 1191-1196, 2011.
-    doi: http://dx.doi.org/10.1145/2063576.2063748
+    doi: https://doi.org/10.1145/2063576.2063748
 
     F.W. Takes and W.A. Kosters, Computing the Eccentricity Distribution of
     Large Graphs, Algorithms 6(1): 100-118, 2013.
-    doi: http://dx.doi.org/10.3390/a6010100
+    doi: https://doi.org/10.3390/a6010100
 
     M. Borassi, P. Crescenzi, M. Habib, W.A. Kosters, A. Marino and F.W. Takes,
     Fast Graph Diameter and Radius BFS-Based Computation in (Weakly Connected)
     Real-World Graphs, Theoretical Computer Science 586: 59-80, 2015.
-    doi: http://dx.doi.org/10.1016/j.tcs.2015.02.033
+    doi: https://doi.org/10.1016/j.tcs.2015.02.033
     """
 
     # init variables
@@ -133,7 +133,7 @@ def extrema_bounding(G, compute="diameter"):
 
         elif compute == 'center':
             ruled_out = {i for i in candidates if ecc_lower[i] > minupper and
-                     (minlower == minupper or ecc_upper[i] + 1 < 2 * minlower)}
+                         (minlower == minupper or ecc_upper[i] + 1 < 2 * minlower)}
 
         elif compute == 'eccentricities':
             ruled_out = {}
@@ -154,13 +154,13 @@ def extrema_bounding(G, compute="diameter"):
         # updating maxuppernode and minlowernode for selection in next round
         for i in candidates:
             if minlowernode is None \
-                    or (ecc_lower[i] == ecc_lower[minlowernode] \
+                    or (ecc_lower[i] == ecc_lower[minlowernode]
                         and degrees[i] > degrees[minlowernode]) \
                     or (ecc_lower[i] < ecc_lower[minlowernode]):
                 minlowernode = i
 
             if maxuppernode is None \
-                    or (ecc_upper[i] == ecc_upper[maxuppernode] \
+                    or (ecc_upper[i] == ecc_upper[maxuppernode]
                         and degrees[i] > degrees[maxuppernode]) \
                     or (ecc_upper[i] > ecc_upper[maxuppernode]):
                 maxuppernode = i
@@ -223,7 +223,7 @@ def eccentricity(G, v=None, sp=None):
     e = {}
     for n in G.nbunch_iter(v):
         if sp is None:
-            length = dict(networkx.single_source_shortest_path_length(G, n))
+            length = networkx.single_source_shortest_path_length(G, n)
             L = len(length)
         else:
             try:

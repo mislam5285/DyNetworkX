@@ -2,7 +2,7 @@
 #
 # coding.py - functions for encoding and decoding trees as sequences
 #
-# Copyright 2015, 2016 NetworkX developers.
+# Copyright 2015-2018 NetworkX developers.
 #
 # This file is part of NetworkX.
 #
@@ -258,7 +258,7 @@ def to_prufer_sequence(T):
     relabel the nodes of your tree to the appropriate format.
 
     This implementation is from [1]_ and has a running time of
-    :math:`O(n \log n)`.
+    $O(n \log n)$.
 
     See also
     --------
@@ -270,22 +270,22 @@ def to_prufer_sequence(T):
     .. [1] Wang, Xiaodong, Lei Wang, and Yingjie Wu.
            "An optimal algorithm for Prufer codes."
            *Journal of Software Engineering and Applications* 2.02 (2009): 111.
-           <http://dx.doi.org/10.4236/jsea.2009.22016>
+           <https://doi.org/10.4236/jsea.2009.22016>
 
     Examples
     --------
     There is a bijection between Prüfer sequences and labeled trees, so
     this function is the inverse of the :func:`from_prufer_sequence`
-    function::
+    function:
 
-        >>> edges = [(0, 3), (1, 3), (2, 3), (3, 4), (4, 5)]
-        >>> tree = nx.Graph(edges)
-        >>> sequence = nx.to_prufer_sequence(tree)
-        >>> sequence
-        [3, 3, 3, 4]
-        >>> tree2 = nx.from_prufer_sequence(sequence)
-        >>> list(tree2.edges()) == edges
-        True
+    >>> edges = [(0, 3), (1, 3), (2, 3), (3, 4), (4, 5)]
+    >>> tree = nx.Graph(edges)
+    >>> sequence = nx.to_prufer_sequence(tree)
+    >>> sequence
+    [3, 3, 3, 4]
+    >>> tree2 = nx.from_prufer_sequence(sequence)
+    >>> list(tree2.edges()) == edges
+    True
 
     """
     # Perform some sanity checks on the input.
@@ -347,14 +347,14 @@ def from_prufer_sequence(sequence):
     relabel the nodes of your tree to the appropriate format.
 
     This implementation is from [1]_ and has a running time of
-    :math:`O(n \log n)`.
+    $O(n \log n)$.
 
     References
     ----------
     .. [1] Wang, Xiaodong, Lei Wang, and Yingjie Wu.
            "An optimal algorithm for Prufer codes."
            *Journal of Software Engineering and Applications* 2.02 (2009): 111.
-           <http://dx.doi.org/10.4236/jsea.2009.22016>
+           <https://doi.org/10.4236/jsea.2009.22016>
 
     See also
     --------
@@ -365,16 +365,16 @@ def from_prufer_sequence(sequence):
     --------
     There is a bijection between Prüfer sequences and labeled trees, so
     this function is the inverse of the :func:`to_prufer_sequence`
-    function::
+    function:
 
-        >>> edges = [(0, 3), (1, 3), (2, 3), (3, 4), (4, 5)]
-        >>> tree = nx.Graph(edges)
-        >>> sequence = nx.to_prufer_sequence(tree)
-        >>> sequence
-        [3, 3, 3, 4]
-        >>> tree2 = nx.from_prufer_sequence(sequence)
-        >>> list(tree2.edges()) == edges
-        True
+    >>> edges = [(0, 3), (1, 3), (2, 3), (3, 4), (4, 5)]
+    >>> tree = nx.Graph(edges)
+    >>> sequence = nx.to_prufer_sequence(tree)
+    >>> sequence
+    [3, 3, 3, 4]
+    >>> tree2 = nx.from_prufer_sequence(sequence)
+    >>> list(tree2.edges()) == edges
+    True
 
     """
     n = len(sequence) + 2

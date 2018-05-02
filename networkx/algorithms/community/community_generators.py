@@ -13,7 +13,7 @@ from __future__ import division
 
 import random
 
-# HACK In order to accomodate both SciPy and non-SciPy implementations,
+# HACK In order to accommodate both SciPy and non-SciPy implementations,
 # we need to wrap the SciPy implementation of the zeta function with an
 # extra parameter, `tolerance`, which will be ignored.
 try:
@@ -294,17 +294,18 @@ def LFR_benchmark_graph(n, tau1, tau2, mu, average_degree=None,
     --------
     Basic usage::
 
+        >>> from networkx.algorithms.community import LFR_benchmark_graph
         >>> n = 250
         >>> tau1 = 3
         >>> tau2 = 1.5
         >>> mu = 0.1
-        >>> G = nx.LFR_benchmark_graph(n, tau1, tau2, mu, average_degree=5,
-        ...                            min_community=20, seed=10)
+        >>> G = LFR_benchmark_graph(n, tau1, tau2, mu, average_degree=5,
+        ...                         min_community=20, seed=10)
 
     Continuing the example above, you can get the communities from the
     node attributes of the graph::
 
-        >>> communities = {frozenset(G.node[v]['community']) for v in G}
+        >>> communities = {frozenset(G.nodes[v]['community']) for v in G}
 
     Notes
     -----
@@ -358,8 +359,10 @@ def LFR_benchmark_graph(n, tau1, tau2, mu, average_degree=None,
 
     # Generate a degree sequence with a power law distribution.
     low, high = min_degree, max_degree
-    condition = lambda seq: sum(seq) % 2 == 0
-    length = lambda seq: len(seq) >= n
+
+    def condition(seq): return sum(seq) % 2 == 0
+
+    def length(seq): return len(seq) >= n
     deg_seq = _powerlaw_sequence(tau1, low, high, condition, length, max_iters)
 
     # Validate parameters for generating the community size sequence.
@@ -377,8 +380,10 @@ def LFR_benchmark_graph(n, tau1, tau2, mu, average_degree=None,
     # that one. As a result, this code is allowed many more chances to
     # generate a valid community size sequence.
     low, high = min_community, max_community
-    condition = lambda seq: sum(seq) == n
-    length = lambda seq: sum(seq) >= n
+
+    def condition(seq): return sum(seq) == n
+
+    def length(seq): return sum(seq) >= n
     comms = _powerlaw_sequence(tau2, low, high, condition, length, max_iters)
 
     # Generate the communities based on the given degree sequence and
@@ -400,5 +405,5 @@ def LFR_benchmark_graph(n, tau1, tau2, mu, average_degree=None,
                 v = random.choice(range(n))
                 if v not in c:
                     G.add_edge(u, v)
-            G.node[u]['community'] = c
+            G.nodes[u]['community'] = c
     return G
