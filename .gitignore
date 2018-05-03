@@ -47,3 +47,6 @@ networkx.egg-info/
 
 # PyCharm project file
 .idea
+
+# Project testing file for Makan
+dynetworkx/classes/test.py

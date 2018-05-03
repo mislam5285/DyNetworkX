@@ -1,7 +1,7 @@
 import networkx as nx
 import dynetworkx as dx
 
-def wrapper(method):
+# def wrapper(method):
 
 def k_core(snapshot_graph, k=None, core_number=None):
     result = []
