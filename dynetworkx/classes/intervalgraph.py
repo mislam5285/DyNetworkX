@@ -8,15 +8,68 @@ class IntervalGraph(object):
         self.tree = IntervalTree()
         # self.graph.update(attr)
         # self.snapshots = []
+        self._adj = {}
+        self._node = {}
+
+    def add_node(self, node_for_adding, **attr):
+        """Add a single node `node_for_adding` and update node attributes.
+
+        Parameters
+        ----------
+        node_for_adding : node
+            A node can be any hashable Python object except None.
+        attr : keyword arguments, optional
+            Set or change node attributes using key=value.
+
+        See Also
+        --------
+        add_nodes_from
+
+        Examples
+        --------
+        >>> G = nx.Graph()  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G.add_node(1)
+        >>> G.add_node('Hello')
+        >>> K3 = nx.Graph([(0, 1), (1, 2), (2, 0)])
+        >>> G.add_node(K3)
+        >>> G.number_of_nodes()
+        3
+
+        Use keywords set/change node attributes:
+
+        >>> G.add_node(1, size=10)
+        >>> G.add_node(3, weight=0.4, UTM=('13S', 382871, 3972649))
+
+        Notes
+        -----
+        A hashable object is one that can be used as a key in a Python
+        dictionary. This includes strings, numbers, tuples of strings
+        and numbers, etc.
+
+        On many platforms hashable items also include mutables such as
+        NetworkX Graphs, though one should be careful that the hash
+        doesn't change on mutables.
+        """
+        if node_for_adding not in self._node:
+            self._adj[node_for_adding] = []
+            self._node[node_for_adding] = attr
+        else:  # update attr even if node already exists
+            self._node[node_for_adding].update(attr)
 
     def add_edge(self, u_of_edge, v_of_edge, begin, end, **attr):
-        iv_edge = Interval(begin, end, (u_of_edge, v_of_edge))
+        iv_edge = Interval(begin, end, (u_of_edge, v_of_edge, {}))
 
         try:
             self.tree.add(iv_edge)
         except ValueError:
             raise NetworkXError("IntervalGraph: edge duration must be strictly bigger than zero {0}.".format(iv_edge))
 
+        # self.dict[u_of_edge] = iv_edge
+        # self.dict[v_of_edge] = iv_edge
+        #
+        # print(id(self.dict[u_of_edge]))
+        #
+        # print(id(iv_edge))
 
     def add_edges_from(self, ebunch_to_add, **attr):
         # (from, to, begin, end)
@@ -25,6 +78,7 @@ class IntervalGraph(object):
                 raise NetworkXError("Edge tuple {0} must be a 4-tuple.".format(e))
 
             self.add_edge(e[0], e[1], e[2], e[3])
+
 
     # def subgraph(self):
     #     g = Graph()
@@ -100,6 +154,7 @@ class IntervalGraph(object):
 
                 line = line.rstrip().split(delimiter)
                 u, v, begin, end = line
+
                 if nodetype is not None:
                     try:
                         u = nodetype(u)
