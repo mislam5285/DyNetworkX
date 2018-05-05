@@ -5,11 +5,94 @@ from intervaltree import Interval, IntervalTree
 
 class IntervalGraph(object):
     def __init__(self, **attr):
+        """Initialize an interval graph with edges, name, or graph attributes.
+
+        Parameters
+        ----------
+        attr : keyword arguments, optional (default= no attributes)
+            Attributes to add to graph as key=value pairs.
+
+        Examples
+        --------
+        >>> G = nx.Graph()  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G = nx.Graph(name='my graph')
+        >>> e = [(1, 2), (2, 3), (3, 4)]  # list of edges
+        >>> G = nx.Graph(e)
+
+        Arbitrary graph attribute pairs (key=value) may be assigned
+
+        >>> G = nx.Graph(e, day="Friday")
+        >>> G.graph
+        {'day': 'Friday'}
+
+        """
         self.tree = IntervalTree()
-        # self.graph.update(attr)
-        # self.snapshots = []
+        self.graph = {}  # dictionary for graph attributes
         self._adj = {}
         self._node = {}
+
+        self.graph.update(attr)
+
+    @property
+    def name(self):
+        """String identifier of the interval graph.
+
+        This interval graph attribute appears in the attribute dict IG.graph
+        keyed by the string `"name"`. as well as an attribute (technically
+        a property) `IG.name`. This is entirely user controlled.
+        """
+        return self.graph.get('name', '')
+
+    @name.setter
+    def name(self, s):
+        self.graph['name'] = s
+
+    def __str__(self):
+        """Return the interval graph name.
+
+        Returns
+        -------
+        name : string
+            The name of the graph.
+
+        Examples
+        --------
+        >>> IG = dnx.Graph(name='foo')
+        >>> str(G)
+        'foo'
+        """
+        return self.name
+
+    def __len__(self):
+        """Return the number of nodes. Use: 'len(G)'.
+
+        Returns
+        -------
+        nnodes : int
+            The number of nodes in the graph.
+
+        Examples
+        --------
+        >>> G = nx.path_graph(4)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> len(G)
+        4
+
+        """
+        return len(self._node)
+
+    def __contains__(self, n):
+        """Return True if n is a node, False otherwise. Use: 'n in G'.
+
+        Examples
+        --------
+        >>> G = nx.path_graph(4)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> 1 in G
+        True
+        """
+        try:
+            return n in self._node
+        except TypeError:
+            return False
 
     def add_node(self, node_for_adding, **attr):
         """Add a single node `node_for_adding` and update node attributes.
@@ -55,6 +138,118 @@ class IntervalGraph(object):
             self._node[node_for_adding] = attr
         else:  # update attr even if node already exists
             self._node[node_for_adding].update(attr)
+
+    def add_nodes_from(self, nodes_for_adding, **attr):
+        """Add multiple nodes.
+
+        Parameters
+        ----------
+        nodes_for_adding : iterable container
+            A container of nodes (list, dict, set, etc.).
+            OR
+            A container of (node, attribute dict) tuples.
+            Node attributes are updated using the attribute dict.
+        attr : keyword arguments, optional (default= no attributes)
+            Update attributes for all nodes in nodes.
+            Node attributes specified in nodes as a tuple take
+            precedence over attributes specified via keyword arguments.
+
+        See Also
+        --------
+        add_node
+
+        Examples
+        --------
+        >>> G = nx.Graph()  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G.add_nodes_from('Hello')
+        >>> K3 = nx.Graph([(0, 1), (1, 2), (2, 0)])
+        >>> G.add_nodes_from(K3)
+        >>> sorted(G.nodes(), key=str)
+        [0, 1, 2, 'H', 'e', 'l', 'o']
+
+        Use keywords to update specific node attributes for every node.
+
+        >>> G.add_nodes_from([1, 2], size=10)
+        >>> G.add_nodes_from([3, 4], weight=0.4)
+
+        Use (node, attrdict) tuples to update attributes for specific nodes.
+
+        >>> G.add_nodes_from([(1, dict(size=11)), (2, {'color':'blue'})])
+        >>> G.nodes[1]['size']
+        11
+        >>> H = nx.Graph()
+        >>> H.add_nodes_from(G.nodes(data=True))
+        >>> H.nodes[1]['size']
+        11
+
+        """
+        for n in nodes_for_adding:
+            # keep all this inside try/except because
+            # CPython throws TypeError on n not in self._node,
+            # while pre-2.7.5 ironpython throws on self._adj[n]
+            try:
+                if n not in self._node:
+                    self._adj[n] = []
+                    self._node[n] = attr.copy()
+                else:
+                    self._node[n].update(attr)
+            except TypeError:
+                nn, ndict = n
+                if nn not in self._node:
+                    self._adj[nn] = []
+                    self._node[nn] = attr.copy()
+                    self._node[nn].update(ndict)
+                else:
+                    self._node[nn].update(attr)
+                    self._node[nn].update(ndict)
+
+    # num of nodes in an interval
+    def number_of_nodes(self):
+        """Return the number of nodes in the graph.
+
+        Returns
+        -------
+        nnodes : int
+            The number of nodes in the graph.
+
+        See Also
+        --------
+        __len__
+
+        Examples
+        --------
+        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> len(G)
+        3
+        """
+        return len(self._node)
+
+    # in interval
+    def has_node(self, n):
+        """Return True if the graph contains the node n.
+
+        Identical to `n in G`
+
+        Parameters
+        ----------
+        n : node
+
+        Examples
+        --------
+        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G.has_node(0)
+        True
+
+        It is more readable and simpler to use
+
+        >>> 0 in G
+        True
+
+        """
+        try:
+            return n in self._node
+        except TypeError:
+            return False
 
     def add_edge(self, u_of_edge, v_of_edge, begin, end, **attr):
         iv_edge = Interval(begin, end, (u_of_edge, v_of_edge, {}))
