@@ -286,7 +286,8 @@ class IntervalGraph(object):
         -----
         Adding an edge that already exists updates the edge data.
 
-        Both begin and end must be the same type across all edges in the interval graph.
+        Both begin and end must be the same type across all edges in the interval graph. Also, to create
+        snapshots, both must be integers.
 
         Many NetworkX algorithms designed for weighted graphs use
         an edge attribute (by default `weight`) to hold a numerical value.
@@ -399,13 +400,10 @@ class IntervalGraph(object):
             they will be overwritten.
         node_data : bool, optional (default= False)
             if True, each node's attributes will be included.
-            Each edge given in the container will be added to the
-            interval graph. The edges must be given as as 4-tuples (u, v, being, end).
-            Both begin and end must be orderable and the same type across all edges.
-            end must be strictly bigger than end.
 
         See Also
         --------
+        to_snapshots : divide the interval graph to snapshots
 
         Notes
         -----
@@ -457,6 +455,77 @@ class IntervalGraph(object):
             G.add_nodes_from((n, self._node[n].copy()) for n in G.nodes)
 
         return G
+
+    def to_snapshots(self, number_of_snapshots, multigraph=False, edge_data=False, edge_interval_data=False,
+                     node_data=False, return_length=False):
+        """Return a list of networkx Graph or MultiGraph objects as snapshots
+        of the interval graph in consecutive order.
+
+        Parameters
+        ----------
+        number_of_snapshots : integer
+            Number of snapshots to divide the interval graph into.
+            Must be bigger than 1.
+        multigraph : bool, optional (default= False)
+            If True, a networkx MultiGraph will be returned. If False, networkx Graph.
+        edge_data: bool, optional (default= False)
+            If True, edges will keep their attributes.
+        edge_interval_data : bool, optional (default= False)
+            If True, each edge's attribute will also include its begin and end interval data.
+            If `edge_data= True` and there already exist edge attributes with names begin and end,
+            they will be overwritten.
+        node_data : bool, optional (default= False)
+            if True, each node's attributes will be included.
+        return_length : bool, optional (default= False)
+            If true, the length of snapshots will be returned as the second argument.
+
+        See Also
+        --------
+        to_subgraph : subgraph based on an interval
+
+        Notes
+        -----
+        In order to create snapshots, begin and end interval objects of the interval graph must be numbers.
+
+        If multigraph= False, and edge_data=True or edge_interval_data=True,
+        in case there are multiple edges, only one will show with one of the edge's attributes.
+
+        Examples
+        --------
+        >>> G = nx.Graph()   # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G.add_edges_from([(0, 1), (1, 2)]) # using a list of edge tuples
+        >>> e = zip(range(0, 3), range(1, 4))
+        >>> G.add_edges_from(e) # Add the path graph 0-1-2-3
+
+        Associate data to edges
+
+        >>> G.add_edges_from([(1, 2), (2, 3)], weight=3)
+        >>> G.add_edges_from([(3, 4), (1, 4)], label='WN2898')
+        """
+
+        if number_of_snapshots < 2 or type(number_of_snapshots) is not int:
+            raise NetworkXError("IntervalGraph: number of snapshots must be an integer and 2 or bigger. "
+                                "{0} was passed.".format(number_of_snapshots))
+
+        begin, end = self.interval()
+        snapshot_len = (end - begin) / number_of_snapshots
+
+        snapshots = []
+        end_inclusive_addition = 0
+        for i in range(number_of_snapshots):
+            # since to_subgraph is end non-inclusive, shift the end up by 1 to include end in the last snapshot.
+            if i == number_of_snapshots - 1:
+                end_inclusive_addition = 1
+
+            snapshots.append(
+                self.to_subgraph(begin + snapshot_len * i, begin + snapshot_len * (i + 1) + end_inclusive_addition,
+                                 multigraph=multigraph, edge_data=edge_data, edge_interval_data=edge_interval_data,
+                                 node_data=node_data))
+        if return_length:
+            return snapshots, snapshot_len
+
+        return snapshots
+
 
     @staticmethod
     def load_from_txt(path, delimiter=" ", nodetype=None, comments="#"):
