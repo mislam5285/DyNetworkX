@@ -1,6 +1,7 @@
 from networkx.classes.graph import Graph
 from networkx.exception import NetworkXError
 from intervaltree import Interval, IntervalTree
+from networkx.classes.multigraph import MultiGraph
 
 
 class IntervalGraph(object):
@@ -53,7 +54,7 @@ class IntervalGraph(object):
         Returns
         -------
         name : string
-            The name of the graph.
+            The name of the interval graph.
 
         Examples
         --------
@@ -93,6 +94,9 @@ class IntervalGraph(object):
             return n in self._node
         except TypeError:
             return False
+
+    def interval(self):
+        return self.tree.begin(), self.tree.end()
 
     def add_node(self, node_for_adding, **attr):
         """Add a single node `node_for_adding` and update node attributes.
@@ -134,7 +138,7 @@ class IntervalGraph(object):
         doesn't change on mutables.
         """
         if node_for_adding not in self._node:
-            self._adj[node_for_adding] = []
+            self._adj[node_for_adding] = {}
             self._node[node_for_adding] = attr
         else:  # update attr even if node already exists
             self._node[node_for_adding].update(attr)
@@ -189,14 +193,14 @@ class IntervalGraph(object):
             # while pre-2.7.5 ironpython throws on self._adj[n]
             try:
                 if n not in self._node:
-                    self._adj[n] = []
+                    self._adj[n] = {}
                     self._node[n] = attr.copy()
                 else:
                     self._node[n].update(attr)
             except TypeError:
                 nn, ndict = n
                 if nn not in self._node:
-                    self._adj[nn] = []
+                    self._adj[nn] = {}
                     self._node[nn] = attr.copy()
                     self._node[nn].update(ndict)
                 else:
@@ -251,33 +255,208 @@ class IntervalGraph(object):
         except TypeError:
             return False
 
-    def add_edge(self, u_of_edge, v_of_edge, begin, end, **attr):
-        iv_edge = Interval(begin, end, (u_of_edge, v_of_edge, {}))
+    def add_edge(self, u, v, begin, end, **attr):
+        """Add an edge between u and v, during interval [begin, end).
 
+        The nodes u and v will be automatically added if they are
+        not already in the interval graph.
+
+        Edge attributes can be specified with keywords or by directly
+        accessing the edge's attribute dictionary. See examples below.
+
+        Parameters
+        ----------
+        u, v : nodes
+            Nodes can be, for example, strings or numbers.
+            Nodes must be hashable (and not None) Python objects.
+        begin: orderable type
+            Inclusive beginning time of the edge appearing in the interval graph.
+            Must be bigger than begin.
+        end: orderable type
+            Non-inclusive ending time of the edge appearing in the interval graph.
+        attr : keyword arguments, optional
+            Edge data (or labels or objects) can be assigned using
+            keyword arguments.
+
+        See Also
+        --------
+        add_edges_from : add a collection of edges
+
+        Notes
+        -----
+        Adding an edge that already exists updates the edge data.
+
+        Both begin and end must be the same type across all edges in the interval graph.
+
+        Many NetworkX algorithms designed for weighted graphs use
+        an edge attribute (by default `weight`) to hold a numerical value.
+
+        Examples
+        --------
+        The following all add the edge e=(1, 2) to graph G:
+
+        >>> G = nx.Graph()   # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> e = (1, 2)
+        >>> G.add_edge(1, 2)           # explicit two-node form
+        >>> G.add_edge(*e)             # single edge as tuple of two nodes
+        >>> G.add_edges_from([(1, 2)])  # add edges from iterable container
+
+        Associate data to edges using keywords:
+
+        >>> G.add_edge(1, 2, weight=3)
+        >>> G.add_edge(1, 3, weight=7, capacity=15, length=342.7)
+
+        For non-string attribute keys, use subscript notation.
+
+        >>> G.add_edge(1, 2)
+        >>> G[1][2].update({0: 5})
+        >>> G.edges[1, 2].update({0: 5})
+        """
+
+        iv_edge = Interval(begin, end, (u, v))
+
+        # if edge exists, just update attr
+        if iv_edge in self.tree:
+            # since both point to the same attr, updating one is enough
+            self._adj[u][iv_edge].update(attr)
+            return
+
+        # add nodes
+        if u not in self._node:
+            self._adj[u] = {}
+            self._node[u] = {}
+        if v not in self._node:
+            self._adj[v] = {}
+            self._node[v] = {}
+
+        # add edge
         try:
             self.tree.add(iv_edge)
         except ValueError:
             raise NetworkXError("IntervalGraph: edge duration must be strictly bigger than zero {0}.".format(iv_edge))
 
-        # self.dict[u_of_edge] = iv_edge
-        # self.dict[v_of_edge] = iv_edge
-        #
-        # print(id(self.dict[u_of_edge]))
-        #
-        # print(id(iv_edge))
+        self._adj[u][iv_edge] = self._adj[iv_edge] = attr
 
     def add_edges_from(self, ebunch_to_add, **attr):
-        # (from, to, begin, end)
+        """Add all the edges in ebunch_to_add.
+
+        Parameters
+        ----------
+        ebunch_to_add : container of edges
+            Each edge given in the container will be added to the
+            interval graph. The edges must be given as as 4-tuples (u, v, being, end).
+            Both begin and end must be orderable and the same type across all edges.
+        attr : keyword arguments, optional
+            Edge data (or labels or objects) can be assigned using
+            keyword arguments.
+
+        See Also
+        --------
+        add_edge : add a single edge
+
+        Notes
+        -----
+        Adding the same edge (with the same interval) twice has no effect
+        but any edge data will be updated when each duplicate edge is added.
+
+        Examples
+        --------
+        >>> G = nx.Graph()   # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G.add_edges_from([(0, 1), (1, 2)]) # using a list of edge tuples
+        >>> e = zip(range(0, 3), range(1, 4))
+        >>> G.add_edges_from(e) # Add the path graph 0-1-2-3
+
+        Associate data to edges
+
+        >>> G.add_edges_from([(1, 2), (2, 3)], weight=3)
+        >>> G.add_edges_from([(3, 4), (1, 4)], label='WN2898')
+        """
+
         for e in ebunch_to_add:
             if len(e) != 4:
                 raise NetworkXError("Edge tuple {0} must be a 4-tuple.".format(e))
 
-            self.add_edge(e[0], e[1], e[2], e[3])
+            self.add_edge(e[0], e[1], e[2], e[3], **attr)
 
+    def to_subgraph(self, begin, end, multigraph=False, edge_data=False, edge_interval_data=False, node_data=False):
+        """Return a networkx Graph or MultiGraph which includes all the nodes and
+        edges which have overlapping intervals with the given interval.
 
-    # def subgraph(self):
-    #     g = Graph()
-    #
+        Parameters
+        ----------
+        begin: orderable type
+            Inclusive beginning time of the edge appearing in the interval graph.
+            Must be bigger than begin.
+        end: orderable type
+            Non-inclusive ending time of the edge appearing in the interval graph.
+        multigraph: bool, optional (default= False)
+            If True, a networkx MultiGraph will be returned. If False, networkx Graph.
+        edge_data: bool, optional (default= False)
+            If True, edges will keep their attributes.
+        edge_interval_data: bool, optional (default= False)
+            If True, each edge's attribute will also include its begin and end interval data.
+            If `edge_data= True` and there already exist edge attributes with names begin and end,
+            they will be overwritten.
+        node_data : bool, optional (default= False)
+            if True, each node's attributes will be included.
+            Each edge given in the container will be added to the
+            interval graph. The edges must be given as as 4-tuples (u, v, being, end).
+            Both begin and end must be orderable and the same type across all edges.
+            end must be strictly bigger than end.
+
+        See Also
+        --------
+
+        Notes
+        -----
+        If multigraph= False, and edge_data=True or edge_interval_data=True,
+        in case there are multiple edges, only one will show with one of the edge's attributes.
+
+        Examples
+        --------
+        >>> G = nx.Graph()   # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G.add_edges_from([(0, 1), (1, 2)]) # using a list of edge tuples
+        >>> e = zip(range(0, 3), range(1, 4))
+        >>> G.add_edges_from(e) # Add the path graph 0-1-2-3
+
+        Associate data to edges
+
+        >>> G.add_edges_from([(1, 2), (2, 3)], weight=3)
+        >>> G.add_edges_from([(3, 4), (1, 4)], label='WN2898')
+        """
+
+        # nodes with no edges will be discarded
+        # getting all edges within interval
+
+        if end <= begin:
+            raise NetworkXError("IntervalGraph: subgraph duration must be strictly bigger than zero: "
+                                "begin: {}, end: {}.".format(begin, end))
+
+        iedges = self.tree[begin:end]
+
+        if multigraph:
+            G = MultiGraph()
+        else:
+            G = Graph()
+
+        if edge_data and edge_interval_data:
+            G.add_edges_from((iedge.data[0], iedge.data[1],
+                              dict(self._adj[iedge.data[0]][iedge], begin=iedge.begin, end=iedge.end))
+                             for iedge in iedges)
+        elif edge_data:
+            G.add_edges_from((iedge.data[0], iedge.data[1], self._adj[iedge.data[0]][iedge].copy())
+                             for iedge in iedges)
+        elif edge_interval_data:
+            G.add_edges_from((iedge.data[0], iedge.data[1], {'begin': iedge.begin, 'end': iedge.end})
+                             for iedge in iedges)
+        else:
+            G.add_edges_from((iedge.data[0], iedge.data[1]) for iedge in iedges)
+
+        # include node attributes
+        if node_data:
+            G.add_nodes_from((n, self._node[n].copy()) for n in G.nodes)
+
+        return G
 
     @staticmethod
     def load_from_txt(path, delimiter=" ", nodetype=None, comments="#"):
