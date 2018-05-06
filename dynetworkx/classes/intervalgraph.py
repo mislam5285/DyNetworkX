@@ -207,14 +207,22 @@ class IntervalGraph(object):
                     self._node[nn].update(attr)
                     self._node[nn].update(ndict)
 
-    # num of nodes in an interval
-    def number_of_nodes(self):
-        """Return the number of nodes in the graph.
+    def number_of_nodes(self, begin=None, end=None):
+        """Return the number of nodes in the interval graph between the given interval.
+
+        Parameters
+        ----------
+        begin: integer, optional  (default= beginning of the entire interval graph)
+            Inclusive beginning time of the node appearing in the interval graph.
+        end: integer, optional  (default= end of the entire interval graph + 1)
+            Non-inclusive ending time of the node appearing in the interval graph.
+            Must be bigger than begin.
+            Note that the default value is shifted up by 1 to make it an inclusive end.
 
         Returns
         -------
         nnodes : int
-            The number of nodes in the graph.
+            The number of nodes in the interval graph.
 
         See Also
         --------
@@ -226,17 +234,40 @@ class IntervalGraph(object):
         >>> len(G)
         3
         """
-        return len(self._node)
 
-    # in interval
-    def has_node(self, n):
-        """Return True if the graph contains the node n.
+        if begin is None and end is None:
+            return len(self._node)
 
-        Identical to `n in G`
+        if begin is None:
+            begin = self.tree.begin()
+
+        if end is None:
+            end = self.tree.end() + 1
+
+        iedges = self.tree[begin:end]
+
+        inodes = set()
+
+        for iv in iedges:
+            inodes.add(iv.data[0])
+            inodes.add(iv.data[1])
+
+        return len(inodes)
+
+    def has_node(self, n, begin=None, end=None):
+        """Return True if the interval graph contains the node n, during the given interval.
+
+        Identical to `n in G` when 'begin' and 'end' are not defined.
 
         Parameters
         ----------
         n : node
+        begin: integer, optional  (default= beginning of the entire interval graph)
+            Inclusive beginning time of the node appearing in the interval graph.
+        end: integer, optional  (default= end of the entire interval graph + 1)
+            Non-inclusive ending time of the node appearing in the interval graph.
+            Must be bigger than begin.
+            Note that the default value is shifted up by 1 to make it an inclusive end.
 
         Examples
         --------
@@ -251,9 +282,72 @@ class IntervalGraph(object):
 
         """
         try:
-            return n in self._node
+            exists_node = n in self._node
         except TypeError:
-            return False
+            exists_node = False
+
+        if (begin is None and end is None) or not exists_node:
+            return exists_node
+
+        if begin is None:
+            begin = self.tree.begin()
+
+        if end is None:
+            end = self.tree.end() + 1
+
+        iedges = self._adj[n].keys()
+
+        for iv in iedges:
+            if iv.overlaps(begin=begin, end=end):
+                return True
+
+        return False
+
+    def remove_node(self, n, begin=None, end=None):
+        """Remove node n within the given interval.
+
+        Removes the node n and all adjacent edges within the given interval.
+        Attempting to remove a non-existent node will raise an exception.
+
+        Parameters
+        ----------
+        n : node
+           A node in the graph
+        begin: integer, optional  (default= beginning of the entire interval graph)
+            Inclusive beginning time of the node appearing in the interval graph.
+        end: integer, optional  (default= end of the entire interval graph + 1)
+            Non-inclusive ending time of the node appearing in the interval graph.
+            Must be bigger than begin.
+            Note that the default value is shifted up by 1 to make it an inclusive end.
+
+        Raises
+        -------
+        NetworkXError
+           If n is not in the interval graph.
+
+        See Also
+        --------
+        remove_nodes_from
+
+        Examples
+        --------
+        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> list(G.edges)
+        [(0, 1), (1, 2)]
+        >>> G.remove_node(1)
+        >>> list(G.edges)
+        []
+
+        """
+        adj = self._adj
+        try:
+            nbrs = list(adj[n])  # list handles self-loops (allows mutation)
+            del self._node[n]
+        except KeyError:  # NetworkXError if n not in self
+            raise NetworkXError("The node %s is not in the graph." % (n,))
+        for u in nbrs:
+            del adj[u][n]  # remove all edges n-u in graph
+        del adj[n]  # now remove node
 
     def add_edge(self, u, v, begin, end, **attr):
         """Add an edge between u and v, during interval [begin, end).
@@ -271,9 +365,9 @@ class IntervalGraph(object):
             Nodes must be hashable (and not None) Python objects.
         begin: orderable type
             Inclusive beginning time of the edge appearing in the interval graph.
-            Must be bigger than begin.
         end: orderable type
             Non-inclusive ending time of the edge appearing in the interval graph.
+            Must be bigger than begin.
         attr : keyword arguments, optional
             Edge data (or labels or objects) can be assigned using
             keyword arguments.
@@ -314,13 +408,15 @@ class IntervalGraph(object):
         >>> G.edges[1, 2].update({0: 5})
         """
 
-        iv_edge = Interval(begin, end, (u, v))
+        iedge = self.__get_iedge_in_tree(begin, end, u, v)
 
         # if edge exists, just update attr
-        if iv_edge in self.tree:
+        if iedge is not None:
             # since both point to the same attr, updating one is enough
-            self._adj[u][iv_edge].update(attr)
+            self._adj[u][iedge].update(attr)
             return
+
+        iedge = Interval(begin, end, (u, v))
 
         # add nodes
         if u not in self._node:
@@ -332,11 +428,11 @@ class IntervalGraph(object):
 
         # add edge
         try:
-            self.tree.add(iv_edge)
+            self.tree.add(iedge)
         except ValueError:
-            raise NetworkXError("IntervalGraph: edge duration must be strictly bigger than zero {0}.".format(iv_edge))
+            raise NetworkXError("IntervalGraph: edge duration must be strictly bigger than zero {0}.".format(iedge))
 
-        self._adj[u][iv_edge] = self._adj[iv_edge] = attr
+        self._adj[u][iedge] = self._adj[iedge] = attr
 
     def add_edges_from(self, ebunch_to_add, **attr):
         """Add all the edges in ebunch_to_add.
@@ -378,6 +474,140 @@ class IntervalGraph(object):
                 raise NetworkXError("Edge tuple {0} must be a 4-tuple.".format(e))
 
             self.add_edge(e[0], e[1], e[2], e[3], **attr)
+
+    def has_edge(self, u, v, begin=None, end=None, overlapping=True):
+        """Return True if there exists an edge between u and v
+        in the interval graph, during the given interval.
+
+        Parameters
+        ----------
+        u, v : nodes
+            Nodes can be, for example, strings or numbers.
+            Nodes must be hashable (and not None) Python objects.
+        begin : integer, optional (default= beginning of the entire interval graph)
+            Inclusive beginning time of the node appearing in the interval graph.
+        end : integer, optional (default= end of the entire interval graph + 1)
+            Non-inclusive ending time of the node appearing in the interval graph.
+            Must be bigger than begin.
+            Note that the default value is shifted up by 1 to make it an inclusive end.
+        overlapping : bool, optional (default= True)
+            if True, it returns True if there exists an edge between u and v with
+            overlapping interval with `begin` and `end`.
+            if False, it returns true only if there exists an edge between u and v
+            with the exact interval.
+            Note: if False, both `begin` and `end` must be defined, otherwise
+            an exception is raised.
+
+        Raises
+        ------
+        NetworkXError
+            If `begin` and `end` are not defined and `overlapping= False`
+
+        Examples
+        --------
+        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G.has_node(0)
+        True
+
+        It is more readable and simpler to use
+
+        >>> 0 in G
+        True
+
+        """
+
+        if begin is None and end is None:
+            for iv in self._adj[u].keys():
+                if iv.data[0] == v or iv.data[1] == v:
+                    return True
+            return False
+
+        if not overlapping:
+            if begin is None or end is None:
+                raise NetworkXError("For exact interval match (overlapping=False), both begin and end must be defined.")
+
+            return self.__get_iedge_in_tree(begin, end, u, v) is not None
+
+        if begin is None:
+            begin = self.tree.begin()
+
+        if end is None:
+            end = self.tree.end() + 1
+
+        for iv in self._adj[u].keys():
+            if (iv.data[0] == v or iv.data[1] == v) and iv.overlaps(begin=begin, end=end):
+                return True
+        return False
+
+    def remove_edge(self, u, v, begin=None, end=None, overlapping=True):
+        """Remove the edge between u and v in the interval graph,
+        during the given interval.
+
+        Quiet if the specified edge is not present.
+
+        Parameters
+        ----------
+        u, v : nodes
+            Nodes can be, for example, strings or numbers.
+            Nodes must be hashable (and not None) Python objects.
+        begin : integer, optional (default= beginning of the entire interval graph)
+            Inclusive beginning time of the edge appearing in the interval graph.
+        end : integer, optional (default= end of the entire interval graph + 1)
+            Non-inclusive ending time of the edge appearing in the interval graph.
+            Must be bigger than begin.
+            Note that the default value is shifted up by 1 to make it an inclusive end.
+        overlapping : bool, optional (default= True)
+            if True, remove the edge between u and v with overlapping interval
+            with `begin` and `end`.
+            if False, remove the edge between u and v with the exact interval.
+            Note: if False, both `begin` and `end` must be defined, otherwise
+            an exception is raised.
+
+        Raises
+        ------
+        NetworkXError
+            If `begin` and `end` are not defined and `overlapping= False`
+
+        Examples
+        --------
+        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G.has_node(0)
+        True
+
+        It is more readable and simpler to use
+
+        >>> 0 in G
+        True
+
+        """
+        # remove every edge between u and v
+        if begin is None and end is None:
+            for iv in self._adj[u].keys():
+                if iv.data[0] == v or iv.data[1] == v:
+                    self.__remove_iedge(iv)
+            return
+
+        # remove edge between u and v with the exact given interval
+        if not overlapping:
+            if begin is None or end is None:
+                raise NetworkXError("For exact interval match (overlapping=False), both begin and end must be defined.")
+
+            iedge = self.__get_iedge_in_tree(u, v, begin, end)
+            if iedge is None:
+                return
+            self.__remove_iedge(iedge)
+            return
+
+        # remove edge between u and v with overlapping interval with the given interval
+        if begin is None:
+            begin = self.tree.begin()
+
+        if end is None:
+            end = self.tree.end() + 1
+
+        for iv in self._adj[u].keys():
+            if (iv.data[0] == v or iv.data[1] == v) and iv.overlaps(begin=begin, end=end):
+                self.__remove_iedge(iv)
 
     def to_subgraph(self, begin, end, multigraph=False, edge_data=False, edge_interval_data=False, node_data=False):
         """Return a networkx Graph or MultiGraph which includes all the nodes and
@@ -526,7 +756,6 @@ class IntervalGraph(object):
 
         return snapshots
 
-
     @staticmethod
     def load_from_txt(path, delimiter=" ", nodetype=None, comments="#"):
         """Read interval graph in from path.
@@ -614,3 +843,19 @@ class IntervalGraph(object):
                 ig.add_edge(u, v, begin, end)
 
         return ig
+
+    def __remove_iedge(self, iedge):
+        self.tree.discard(iedge)
+        self._adj[iedge.data[0]].pop(iedge, None)
+        self._adj[iedge.data[1]].pop(iedge, None)
+
+    def __get_iedge_in_tree(self, u, v, begin, end):
+        temp_iedge = Interval(begin, end, (u, v))
+        if temp_iedge in self.tree:
+            return temp_iedge
+
+        temp_iedge = Interval(begin, end, (v, u))
+        if temp_iedge in self.tree:
+            return temp_iedge
+
+        return None
