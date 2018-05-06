@@ -580,13 +580,6 @@ class IntervalGraph(object):
         True
 
         """
-        # remove every edge between u and v
-        if begin is None and end is None:
-            for iv in self._adj[u].keys():
-                if iv.data[0] == v or iv.data[1] == v:
-                    self.__remove_iedge(iv)
-            return
-
         # remove edge between u and v with the exact given interval
         if not overlapping:
             if begin is None or end is None:
@@ -598,6 +591,14 @@ class IntervalGraph(object):
             self.__remove_iedge(iedge)
             return
 
+        iedges_to_remove = []
+
+        # remove every edge between u and v
+        if begin is None and end is None:
+            for iv in self._adj[u].keys():
+                if iv.data[0] == v or iv.data[1] == v:
+                    iedges_to_remove.append(iv)
+
         # remove edge between u and v with overlapping interval with the given interval
         if begin is None:
             begin = self.tree.begin()
@@ -607,7 +608,11 @@ class IntervalGraph(object):
 
         for iv in self._adj[u].keys():
             if (iv.data[0] == v or iv.data[1] == v) and iv.overlaps(begin=begin, end=end):
-                self.__remove_iedge(iv)
+                iedges_to_remove.append(iv)
+
+        # removing found iedges
+        for iv in iedges_to_remove:
+            self.__remove_iedge(iv)
 
     def to_subgraph(self, begin, end, multigraph=False, edge_data=False, edge_interval_data=False, node_data=False):
         """Return a networkx Graph or MultiGraph which includes all the nodes and
