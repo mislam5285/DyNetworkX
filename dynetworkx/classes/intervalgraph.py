@@ -96,6 +96,17 @@ class IntervalGraph(object):
             return False
 
     def interval(self):
+        """Return a 2-tuple as (begin, end) interval of the entire
+         interval graph.
+
+         Note that end is non-inclusive.
+
+        Examples
+        --------
+        >>> G = nx.path_graph(4)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> 1 in G
+        True
+        """
         return self.tree.begin(), self.tree.end()
 
     def add_node(self, node_for_adding, **attr):
@@ -614,6 +625,70 @@ class IntervalGraph(object):
         for iv in iedges_to_remove:
             self.__remove_iedge(iv)
 
+    def __remove_iedge(self, iedge):
+        """Remove the interval edge from the interval graph.
+
+        Quiet if the specified edge is not present.
+
+        Parameters
+        ----------
+        iedge : Interval object
+            Interval edge to be removed.
+
+        Examples
+        --------
+        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G.has_node(0)
+        True
+
+        It is more readable and simpler to use
+
+        >>> 0 in G
+        True
+
+        """
+        self.tree.discard(iedge)
+        self._adj[iedge.data[0]].pop(iedge, None)
+        self._adj[iedge.data[1]].pop(iedge, None)
+
+    def __get_iedge_in_tree(self, u, v, begin, end):
+        """Return interval edge if found in the interval graph with the exact interval,
+        otherwise return None.
+
+        Parameters
+        ----------
+        u, v : nodes
+            Nodes can be, for example, strings or numbers.
+            Nodes must be hashable (and not None) Python objects.
+        begin : integer
+            Inclusive beginning time of the edge appearing in the interval graph.
+        end : integer
+            Non-inclusive ending time of the edge appearing in the interval graph.
+            Must be bigger than begin.
+
+        Examples
+        --------
+        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G.has_node(0)
+        True
+
+        It is more readable and simpler to use
+
+        >>> 0 in G
+        True
+
+        """
+
+        temp_iedge = Interval(begin, end, (u, v))
+        if temp_iedge in self.tree:
+            return temp_iedge
+
+        temp_iedge = Interval(begin, end, (v, u))
+        if temp_iedge in self.tree:
+            return temp_iedge
+
+        return None
+
     def to_subgraph(self, begin, end, multigraph=False, edge_data=False, edge_interval_data=False, node_data=False):
         """Return a networkx Graph or MultiGraph which includes all the nodes and
         edges which have overlapping intervals with the given interval.
@@ -848,19 +923,3 @@ class IntervalGraph(object):
                 ig.add_edge(u, v, begin, end)
 
         return ig
-
-    def __remove_iedge(self, iedge):
-        self.tree.discard(iedge)
-        self._adj[iedge.data[0]].pop(iedge, None)
-        self._adj[iedge.data[1]].pop(iedge, None)
-
-    def __get_iedge_in_tree(self, u, v, begin, end):
-        temp_iedge = Interval(begin, end, (u, v))
-        if temp_iedge in self.tree:
-            return temp_iedge
-
-        temp_iedge = Interval(begin, end, (v, u))
-        if temp_iedge in self.tree:
-            return temp_iedge
-
-        return None
