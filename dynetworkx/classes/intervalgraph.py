@@ -432,7 +432,7 @@ class IntervalGraph(object):
         except ValueError:
             raise NetworkXError("IntervalGraph: edge duration must be strictly bigger than zero {0}.".format(iedge))
 
-        self._adj[u][iedge] = self._adj[iedge] = attr
+        self._adj[u][iedge] = self._adj[v][iedge] = attr
 
     def add_edges_from(self, ebunch_to_add, **attr):
         """Add all the edges in ebunch_to_add.
@@ -526,7 +526,7 @@ class IntervalGraph(object):
             if begin is None or end is None:
                 raise NetworkXError("For exact interval match (overlapping=False), both begin and end must be defined.")
 
-            return self.__get_iedge_in_tree(begin, end, u, v) is not None
+            return self.__get_iedge_in_tree(u, v, begin, end) is not None
 
         if begin is None:
             begin = self.tree.begin()
