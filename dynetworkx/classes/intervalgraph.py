@@ -749,7 +749,65 @@ class IntervalGraph(object):
                 return True
         return False
 
-    def edges(self, u=None, v=None, begin=None, end=None, data=False):
+    def edges(self, u=None, v=None, begin=None, end=None, data=False, default=None):
+        """A list of Interval objects of the IntervalGraph edges.
+
+        All edges which are present within the given interval.
+
+        All parameters are optional. u and v can be thought of as constraints.
+        If no node is defined, all edges within the interval are returned.
+        If one node is defined, all edges which has that node as one end,
+        will be returned, and so on.
+
+        TODO: Finish implementation.
+
+        Parameters
+        ----------
+        u, v : nodes, optional (default=None)
+            Nodes can be, for example, strings or numbers.
+            Nodes must be hashable (and not None) Python objects.
+        begin: integer, optional  (default= beginning of the entire interval graph)
+            Inclusive beginning time of the node appearing in the interval graph.
+        end: integer, optional  (default= end of the entire interval graph + 1)
+            Non-inclusive ending time of the node appearing in the interval graph.
+            Must be bigger than begin.
+            Note that the default value is shifted up by 1 to make it an inclusive end.
+        data : string or bool, optional (default=False)
+            The node attribute returned in 2-tuple (n, ddict[data]).
+            If False, return just the nodes n.
+        default : value, optional (default=None)
+            Value used for nodes that don't have the requested attribute.
+            Only relevant if data is not True or False.
+
+        Returns
+        -------
+        List of Interval objects
+            An interval object has the following format: (begin, end, (u, v))
+
+            When called, if data is False, a list of interval objects.
+            Otherwise a list of 2-tuples (Interval, attribute value)
+            where data is True.
+
+        Examples
+        --------
+        There are two simple ways of getting a list of all edges in the graph:
+
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11), (6, 4, 12, 19), (2, 4, 8, 15)])
+        >>> G.edges()
+
+        To get the edges data along with the intervals:
+
+        >>> G.add_nodes_from([(1, {'time': '1pm'}), (2, {'time': '2pm'}), (4, {'time': '4pm'}), (6, {'day': 'Friday'})])
+        >>> G.edges(data="time")
+        >>> G.edges(data="time", default="5pm")
+
+        To get edges which appear in a specific interval.
+
+        >>> G.edges(begin=11, data=True)
+        >>> G.edges(begin=4, end=12) # non-inclusive end
+        """
+
         # TODO: to be completed, may need separation
         if begin is None and end is None:
             if u is None and v is None:

@@ -34,6 +34,7 @@ Reporting interval graph, nodes and edges
 
    IntervalGraph.nodes
    IntervalGraph.has_node
+   IntervalGraph.edges
    IntervalGraph.has_edge
    IntervalGraph.__contains__
    IntervalGraph.__str__
