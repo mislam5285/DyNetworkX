@@ -110,7 +110,7 @@ class IntervalGraph(object):
         return self.tree.begin(), self.tree.end()
 
     def add_node(self, node_for_adding, **attr):
-        """Add a single node `node_for_adding` and update node attributes.
+        """Add a single node `node_for_adding`  and update node attributes.
 
         Parameters
         ----------
