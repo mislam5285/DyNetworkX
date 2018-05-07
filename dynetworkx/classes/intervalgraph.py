@@ -479,7 +479,7 @@ class IntervalGraph(object):
 
         >>> G.nodes(begin=11, data=True)
         [(2, {'time': '2pm'}), (4, {'time': '4pm'}), (6, {'day': 'Friday'})]
-        >>> G.nodes(begin=4, end=12)
+        >>> G.nodes(begin=4, end=12) # non-inclusive end
         [1, 2, 4]
         """
         if begin is None and end is None:
@@ -503,10 +503,13 @@ class IntervalGraph(object):
         return NodeDataView(node_dict, data=data, default=default)
 
     def remove_node(self, n, begin=None, end=None):
-        """Remove node n within the given interval.
+        """Remove the presence of a node n within the given interval.
 
-        Removes the node n and all adjacent edges within the given interval.
-        Attempting to remove a non-existent node will raise an exception.
+        Removes the presence node n and all adjacent edges within the given interval.
+
+        If interval is specified, all the edges of n will be removed within that interval.
+
+        Quiet if n is not in the interval graph.
 
         Parameters
         ----------
@@ -519,34 +522,43 @@ class IntervalGraph(object):
             Must be bigger than begin.
             Note that the default value is shifted up by 1 to make it an inclusive end.
 
-        Raises
-        -------
-        NetworkXError
-           If n is not in the interval graph.
-
-        See Also
-        --------
-        remove_nodes_from
-
         Examples
         --------
-        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> list(G.edges)
-        [(0, 1), (1, 2)]
-        >>> G.remove_node(1)
-        >>> list(G.edges)
-        []
-
+        >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11), (6, 4, 12, 19), (2, 4, 8, 15)])
+        >>> G.add_nodes_from([(1, {'time': '1pm'}), (2, {'time': '2pm'}), (4, {'time': '4pm'})])
+        >>> G.nodes(begin=4, end=6)
+        [1, 2, 4, 6]
+        >>> G.remove_node(2, begin=4, end=6)
+        >>> G.nodes(begin=4, end=6)
+        [4, 6]
+        >>> G.nodes(data=True)
+        [(1, {'time': '1pm'}), (2, {'time': '2pm'}), (4, {'time': '4pm'}), (6, {})]
+        >>> G.remove_node(2)
+        >>> G.nodes(data=True)
+        [(1, {'time': '1pm'}), (4, {'time': '4pm'}), (6, {})]
         """
-        adj = self._adj
-        try:
-            nbrs = list(adj[n])  # list handles self-loops (allows mutation)
-            del self._node[n]
-        except KeyError:  # NetworkXError if n not in self
-            raise NetworkXError("The node %s is not in the graph." % (n,))
-        for u in nbrs:
-            del adj[u][n]  # remove all edges n-u in graph
-        del adj[n]  # now remove node
+
+        if n not in self._node:
+            return
+
+        if begin is None and end is None:
+            for iedge in list(self._adj[n].keys()):
+                self.__remove_iedge(iedge)
+        else:
+            if begin is None:
+                begin = self.tree.begin()
+
+            if end is None:
+                end = self.tree.end() + 1
+
+            for iedge in self.tree[begin:end]:
+                if iedge.data[0] == n or iedge.data[1] == n:
+                    self.__remove_iedge(iedge)
+
+        # delete the node and its attributes if no edge left
+        if len(self._adj[n]) == 0:
+            self._adj.pop(n, None)
+            self._node.pop(n, None)
 
     def add_edge(self, u, v, begin, end, **attr):
         """Add an edge between u and v, during interval [begin, end).

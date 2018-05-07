@@ -32,6 +32,7 @@ Reporting interval graph, nodes and edges
 .. autosummary::
    :toctree: generated/
 
+   IntervalGraph.nodes
    IntervalGraph.has_node
    IntervalGraph.has_edge
    IntervalGraph.__contains__
