@@ -749,7 +749,16 @@ class IntervalGraph(object):
                 return True
         return False
 
-    # finish doc
+    def edges(self, u=None, v=None, begin=None, end=None, data=False):
+        # TODO: to be completed, may need separation
+        if begin is None and end is None:
+            if u is None and v is None:
+                return list(self.tree.all_intervals)
+            elif u is None:
+                return list(self._adj[u].keys())
+            elif v is None:
+                return list(self._adj[v].keys())
+
     def remove_edge(self, u, v, begin=None, end=None, overlapping=True):
         """Remove the edge between u and v in the interval graph,
         during the given interval.
@@ -782,16 +791,24 @@ class IntervalGraph(object):
         Examples
         --------
         >>> G = dnx.IntervalGraph()
-        >>> G.add_edges_from([(1, 2, 3, 10), (1, 2, 8, 17), (2, 4, 1, 11)])
+        >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11), (6, 4, 5, 9), (1, 2, 8, 15)])
         >>> G.remove_edge(1, 2)
+        >>> G.has_edge(1, 2)
+        False
 
         With specific overlapping interval
         >>> G = dnx.IntervalGraph()
-        >>> G.add_edges_from([(1, 2, 3, 10), (1, 2, 8, 17), (2, 4, 1, 11)])
+        >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11), (6, 4, 5, 9), (1, 2, 8, 15)])
         >>> G.remove_edge(1, 2, begin=2, end=4)
+        >>> G.has_edge(1, 2, begin=2, end=4)
+        False
+        >>> G.has_edge(1, 2)
+        True
 
         Exact interval match
-        >>> G.remove_edge(1, 2, begin=8, end=17)
+        >>> G.remove_edge(2, 4, begin=1, end=11, overlapping=False)
+        >>> G.has_edge(2, 4, begin=1, end=11)
+        False
         """
         # remove edge between u and v with the exact given interval
         if not overlapping:
