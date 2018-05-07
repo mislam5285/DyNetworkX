@@ -1,8 +1,9 @@
+import dynetworkx as dnx
 from networkx.classes.graph import Graph
 from networkx.exception import NetworkXError
 from intervaltree import Interval, IntervalTree
 from networkx.classes.multigraph import MultiGraph
-import dynetworkx as dnx
+from networkx.classes.reportviews import NodeView, EdgeView, NodeDataView
 
 
 class IntervalGraph(object):
@@ -425,7 +426,82 @@ class IntervalGraph(object):
 
         return False
 
-    # finish doc
+    def nodes(self, begin=None, end=None, data=False, default=None):
+        """A NodeDataView of the IntervalGraph nodes.
+
+        A nodes is considered to be present during an interval, if it has
+        an edge with overlapping interval.
+
+        Parameters
+        ----------
+        begin: integer, optional  (default= beginning of the entire interval graph)
+            Inclusive beginning time of the node appearing in the interval graph.
+        end: integer, optional  (default= end of the entire interval graph + 1)
+            Non-inclusive ending time of the node appearing in the interval graph.
+            Must be bigger than begin.
+            Note that the default value is shifted up by 1 to make it an inclusive end.
+        data : string or bool, optional (default=False)
+            The node attribute returned in 2-tuple (n, ddict[data]).
+            If False, return just the nodes n.
+        default : value, optional (default=None)
+            Value used for nodes that don't have the requested attribute.
+            Only relevant if data is not True or False.
+
+        Returns
+        -------
+        NodeDataView
+            A NodeDataView iterates over `(n, data)` and has no set operations.
+
+            When called, if data is False, an iterator over nodes.
+            Otherwise an iterator of 2-tuples (node, attribute value)
+            where data is True.
+
+        Examples
+        --------
+        There are two simple ways of getting a list of all nodes in the graph:
+
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11), (6, 4, 12, 19), (2, 4, 8, 15)])
+        [1, 2, 4, 6]
+
+        To get the node data along with the nodes:
+
+        >>> G.add_nodes_from([(1, {'time': '1pm'}), (2, {'time': '2pm'}), (4, {'time': '4pm'}), (6, {'day': 'Friday'})])
+        [(1, {'time': '1pm'}), (2, {'time': '2pm'}), (4, {'time': '4pm'}), (6, {'day': 'Friday'})]
+
+        >>> G.nodes(data="time")
+        [(1, '1pm'), (2, '2pm'), (4, '4pm'), (6, None)]
+        >>> G.nodes(data="time", default="5pm")
+        [(1, '1pm'), (2, '2pm'), (4, '4pm'), (6, '5pm')]
+
+        To get nodes which appear in a specific interval. nodes
+        without an edge are not considered present.
+
+        >>> G.nodes(begin=11, data=True)
+        [(2, {'time': '2pm'}), (4, {'time': '4pm'}), (6, {'day': 'Friday'})]
+        >>> G.nodes(begin=4, end=12)
+        [1, 2, 4]
+        """
+        if begin is None and end is None:
+            return NodeDataView(self._node, data=data, default=default)
+
+        if begin is None:
+            begin = self.tree.begin()
+
+        if end is None:
+            end = self.tree.end() + 1
+
+        iedges = self.tree[begin:end]
+
+        inodes = set()
+        for iv in iedges:
+            inodes.add(iv.data[0])
+            inodes.add(iv.data[1])
+
+        node_dict = {n: self._node[n] for n in inodes}
+
+        return NodeDataView(node_dict, data=data, default=default)
+
     def remove_node(self, n, begin=None, end=None):
         """Remove node n within the given interval.
 
