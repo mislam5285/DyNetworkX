@@ -2,9 +2,116 @@ from networkx.classes.graph import Graph
 from networkx.exception import NetworkXError
 from intervaltree import Interval, IntervalTree
 from networkx.classes.multigraph import MultiGraph
+import dynetworkx as dnx
 
 
 class IntervalGraph(object):
+    """Base class for undirected interval graphs.
+
+    The IntervalGraph class allows any hashable object as a node
+    and can associate key/value attribute pairs with each undirected edge.
+
+    Each edge must have two integers, begin and end for its interval.
+
+    Self-loops are allowed but multiple edges
+    (two or more edges with the same nodes, begin and end interval) are not.
+
+    Two nodes can have more than one edge with different overlapping or non-overlapping intervals.
+
+    Parameters
+    ----------
+    attr : keyword arguments, optional (default= no attributes)
+        Attributes to add to graph as key=value pairs.
+
+    Examples
+    --------
+    Create an empty graph structure (a "null interval graph") with no nodes and
+    no edges.
+
+    >>> G = dnx.IntervalGraph()
+
+    G can be grown in several ways.
+
+    **Nodes:**
+
+    Add one node at a time:
+
+    >>> G.add_node(1)
+
+    Add the nodes from any container (a list, dict, set or
+    even the lines from a file or the nodes from another graph).
+
+    Add the nodes from any container (a list, dict, set)
+
+    >>> G.add_nodes_from([2, 3])
+    >>> G.add_nodes_from(range(100, 110))
+
+    **Edges:**
+
+    G can also be grown by adding edges. This can be considered
+    the primary way to grow G, since nodes with no edge will not
+    appear in G in most cases. See ``G.to_snapshot()``.
+
+    Add one edge, which starts at 0 and ends at 10.
+    Keep in mind that the interval is [0, 10).
+    Thus, it does not include the end.
+
+    >>> G.add_edge(1, 2, 0, 10)
+
+    a list of edges,
+
+    >>> G.add_edges_from([(1, 2, 0, 10), (1, 3, 3, 11)])
+
+    If some edges connect nodes not yet in the graph, the nodes
+    are added automatically. There are no errors when adding
+    nodes or edges that already exist.
+
+    **Attributes:**
+
+    Each interval graph, node, and edge can hold key/value attribute pairs
+    in an associated attribute dictionary (the keys must be hashable).
+    By default these are empty, but can be added or changed using
+    add_edge, add_node.
+
+    Keep in mind that the edge interval is not an attribute of the edge.
+
+    >>> G = dnx.IntervalGraph(day="Friday")
+    >>> G.graph
+    {'day': 'Friday'}
+
+    Add node attributes using add_node(), add_nodes_from()
+
+    >>> G.add_node(1, time='5pm')
+    >>> G.add_nodes_from([3], time='2pm')
+
+    Add edge attributes using add_edge(), add_edges_from().
+
+    >>> G.add_edge(1, 2, 0, 10, weight=4.7 )
+    >>> G.add_edges_from([(3, 4, 3, 11), (4, 5, 0, 33)], color='red')
+
+    **Shortcuts:**
+
+    Here are a couple examples of available shortcuts:
+
+    >>> 1 in G  # check if node in interval graph during any interval
+    True
+    >>> len(G)  # number of nodes in the entire interval graph
+    5
+
+    **Subclasses (Advanced):**
+    Edges in interval graphs are represented by Interval Objects and are kept
+    in an IntervalTree. Both are based on
+    intervaltree available in pypi (https://pypi.org/project/intervaltree).
+    IntervalTree allows for fast interval based search through edges,
+    which makes interval graph analyes possible.
+
+    The Graph class uses a dict-of-dict-of-dict data structure.
+    The outer dict (node_dict) holds adjacency information keyed by node.
+    The next dict (adjlist_dict) represents the adjacency information and holds
+    edge data keyed by interval object.  The inner dict (edge_attr_dict) represents
+    the edge data and holds edge attribute values keyed by attribute names.
+    """
+
     def __init__(self, **attr):
         """Initialize an interval graph with edges, name, or graph attributes.
 
@@ -15,17 +122,10 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.Graph()  # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> G = nx.Graph(name='my graph')
-        >>> e = [(1, 2), (2, 3), (3, 4)]  # list of edges
-        >>> G = nx.Graph(e)
-
-        Arbitrary graph attribute pairs (key=value) may be assigned
-
-        >>> G = nx.Graph(e, day="Friday")
+        >>> G = dnx.IntervalGraph()
+        >>> G = dnx.IntervalGraph(name='my graph')
         >>> G.graph
-        {'day': 'Friday'}
-
+        {'name': 'my graph'}
         """
         self.tree = IntervalTree()
         self.graph = {}  # dictionary for graph attributes
@@ -58,7 +158,7 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> IG = dnx.Graph(name='foo')
+        >>> G = dnx.IntervalGraph(name='foo')
         >>> str(G)
         'foo'
         """
@@ -74,9 +174,10 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.path_graph(4)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_nodes_from([2, 4, 5])
         >>> len(G)
-        4
+        3
 
         """
         return len(self._node)
@@ -86,8 +187,9 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.path_graph(4)  # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> 1 in G
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_node(2)
+        >>> 2 in G
         True
         """
         try:
@@ -103,9 +205,10 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.path_graph(4)  # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> 1 in G
-        True
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edges_from([(1, 2, 0, 10), (3, 7, 9, 16)])
+        >>> G.interval()
+        (0, 16)
         """
         return self.tree.begin(), self.tree.end()
 
@@ -125,13 +228,11 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.Graph()  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G = dnx.IntervalGraph()
         >>> G.add_node(1)
         >>> G.add_node('Hello')
-        >>> K3 = nx.Graph([(0, 1), (1, 2), (2, 0)])
-        >>> G.add_node(K3)
         >>> G.number_of_nodes()
-        3
+        2
 
         Use keywords set/change node attributes:
 
@@ -175,12 +276,10 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.Graph()  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G = dnx.IntervalGraph()
         >>> G.add_nodes_from('Hello')
-        >>> K3 = nx.Graph([(0, 1), (1, 2), (2, 0)])
-        >>> G.add_nodes_from(K3)
-        >>> sorted(G.nodes(), key=str)
-        [0, 1, 2, 'H', 'e', 'l', 'o']
+        >>> G.has_node('e')
+        True
 
         Use keywords to update specific node attributes for every node.
 
@@ -190,13 +289,6 @@ class IntervalGraph(object):
         Use (node, attrdict) tuples to update attributes for specific nodes.
 
         >>> G.add_nodes_from([(1, dict(size=11)), (2, {'color':'blue'})])
-        >>> G.nodes[1]['size']
-        11
-        >>> H = nx.Graph()
-        >>> H.add_nodes_from(G.nodes(data=True))
-        >>> H.nodes[1]['size']
-        11
-
         """
         for n in nodes_for_adding:
             # keep all this inside try/except because
@@ -241,9 +333,18 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edges_from([(1, 2, 0, 5), (3, 4, 8, 11)])
         >>> len(G)
-        3
+        4
+        >>> G.number_of_nodes()
+        4
+        >>> G.number_of_nodes(begin=6)
+        2
+        >>> G.number_of_nodes(begin=5, end=8) # end in non-inclusive
+        2
+        >>> G.number_of_nodes(end=8)
+        4
         """
 
         if begin is None and end is None:
@@ -282,8 +383,9 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> G.has_node(0)
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_ndoe(1)
+        >>> G.has_node(1)
         True
 
         It is more readable and simpler to use
@@ -291,6 +393,15 @@ class IntervalGraph(object):
         >>> 0 in G
         True
 
+        With interval query:
+
+        >>> G.add_edge(3, 4, 2, 5)
+        >>> G.has_node(3)
+        True
+        >>> G.has_node(3, begin=2)
+        True
+        >>> G.has_node(3, end=2) # end is non-inclusive
+        False
         """
         try:
             exists_node = n in self._node
@@ -314,6 +425,7 @@ class IntervalGraph(object):
 
         return False
 
+    # finish doc
     def remove_node(self, n, begin=None, end=None):
         """Remove node n within the given interval.
 
@@ -399,24 +511,18 @@ class IntervalGraph(object):
 
         Examples
         --------
-        The following all add the edge e=(1, 2) to graph G:
+        The following all add the edge e=(1, 2, 3, 10) to graph G:
 
-        >>> G = nx.Graph()   # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> e = (1, 2)
-        >>> G.add_edge(1, 2)           # explicit two-node form
-        >>> G.add_edge(*e)             # single edge as tuple of two nodes
-        >>> G.add_edges_from([(1, 2)])  # add edges from iterable container
+        >>> G = dnx.IntervalGraph()
+        >>> e = (1, 2, 3, 10)
+        >>> G.add_edge(1, 2, 3, 10)           # explicit two-node form with interval
+        >>> G.add_edge(*e)             # single edge as tuple of two nodes and interval
+        >>> G.add_edges_from([(1, 2, 3, 10)])  # add edges from iterable container
 
         Associate data to edges using keywords:
 
-        >>> G.add_edge(1, 2, weight=3)
-        >>> G.add_edge(1, 3, weight=7, capacity=15, length=342.7)
-
-        For non-string attribute keys, use subscript notation.
-
-        >>> G.add_edge(1, 2)
-        >>> G[1][2].update({0: 5})
-        >>> G.edges[1, 2].update({0: 5})
+        >>> G.add_edge(1, 2, 3, 10 weight=3)
+        >>> G.add_edge(1, 3, 4, 9, weight=7, capacity=15, length=342.7)
         """
 
         iedge = self.__get_iedge_in_tree(begin, end, u, v)
@@ -469,15 +575,13 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.Graph()   # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> G.add_edges_from([(0, 1), (1, 2)]) # using a list of edge tuples
-        >>> e = zip(range(0, 3), range(1, 4))
-        >>> G.add_edges_from(e) # Add the path graph 0-1-2-3
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11)]) # using a list of edge tuples
 
         Associate data to edges
 
-        >>> G.add_edges_from([(1, 2), (2, 3)], weight=3)
-        >>> G.add_edges_from([(3, 4), (1, 4)], label='WN2898')
+        >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11)], weight=3)
+        >>> G.add_edges_from([(3, 4, 2, 19), (1, 4, 1, 3)], label='WN2898')
         """
 
         for e in ebunch_to_add:
@@ -516,15 +620,22 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> G.has_node(0)
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11)])
+        >>> G.has_edge(1, 2)
         True
 
-        It is more readable and simpler to use
-
-        >>> 0 in G
+        With specific overlapping interval
+        >>> G.has_edge(1, 2, begin=2)
         True
+        >>> G.has_edge(2, 4, begin=12)
+        False
 
+        Exact interval match
+        >>> G.has_edge(2, 4, begin=1, end=11)
+        True
+        >>> G.has_edge(2, 4, begin=2, end=11)
+        False
         """
 
         if begin is None and end is None:
@@ -550,6 +661,7 @@ class IntervalGraph(object):
                 return True
         return False
 
+    # finish doc
     def remove_edge(self, u, v, begin=None, end=None, overlapping=True):
         """Remove the edge between u and v in the interval graph,
         during the given interval.
@@ -581,15 +693,17 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> G.has_node(0)
-        True
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edges_from([(1, 2, 3, 10), (1, 2, 8, 17), (2, 4, 1, 11)])
+        >>> G.remove_edge(1, 2)
 
-        It is more readable and simpler to use
+        With specific overlapping interval
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edges_from([(1, 2, 3, 10), (1, 2, 8, 17), (2, 4, 1, 11)])
+        >>> G.remove_edge(1, 2, begin=2, end=4)
 
-        >>> 0 in G
-        True
-
+        Exact interval match
+        >>> G.remove_edge(1, 2, begin=8, end=17)
         """
         # remove edge between u and v with the exact given interval
         if not overlapping:
@@ -637,15 +751,10 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> G.has_node(0)
-        True
-
-        It is more readable and simpler to use
-
-        >>> 0 in G
-        True
-
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edge(1, 2, 3, 10)
+        >>> iedge = Interval(3, 10, (1, 2))   # Interval(begin, end, (u, v))
+        >>> G.__remove_iedge(iedge)
         """
         self.tree.discard(iedge)
         self._adj[iedge.data[0]].pop(iedge, None)
@@ -668,15 +777,12 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.path_graph(3)  # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> G.has_node(0)
-        True
-
-        It is more readable and simpler to use
-
-        >>> 0 in G
-        True
-
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edge(1, 2, 3, 10)
+        >>> G.__get_iedge_in_tree(2, 1, 3, 10)
+        Interval(3, 10, (1, 2))
+        >>> G.__get_iedge_in_tree(2, 1, 4, 10)
+        None
         """
 
         temp_iedge = Interval(begin, end, (u, v))
@@ -695,10 +801,10 @@ class IntervalGraph(object):
 
         Parameters
         ----------
-        begin: orderable type
+        begin: integer
             Inclusive beginning time of the edge appearing in the interval graph.
             Must be bigger than begin.
-        end: orderable type
+        end: integer
             Non-inclusive ending time of the edge appearing in the interval graph.
         multigraph: bool, optional (default= False)
             If True, a networkx MultiGraph will be returned. If False, networkx Graph.
@@ -720,21 +826,30 @@ class IntervalGraph(object):
         If multigraph= False, and edge_data=True or edge_interval_data=True,
         in case there are multiple edges, only one will show with one of the edge's attributes.
 
+        Note: nodes with no edges will not appear in any subgraph.
+
         Examples
         --------
-        >>> G = nx.Graph()   # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> G.add_edges_from([(0, 1), (1, 2)]) # using a list of edge tuples
-        >>> e = zip(range(0, 3), range(1, 4))
-        >>> G.add_edges_from(e) # Add the path graph 0-1-2-3
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11), (6, 4, 12, 19), (2, 4, 8, 15)])
+        >>> H = G.to_subgraph(4, 12)
+        >>> type(H)
+        <class 'networkx.classes.graph.Graph'>
+        >>> list(H.edges(data=True))
+        [(1, 2, {}), (2, 4, {})]
 
-        Associate data to edges
+        >>> H = G.to_subgraph(4, 12, edge_interval_data=True)
+        >>> type(H)
+        <class 'networkx.classes.graph.Graph'>
+        >>> list(H.edges(data=True))
+        [(1, 2, {'end': 10, 'begin': 3}), (2, 4, {'end': 15, 'begin': 8})]
 
-        >>> G.add_edges_from([(1, 2), (2, 3)], weight=3)
-        >>> G.add_edges_from([(3, 4), (1, 4)], label='WN2898')
+        >>> M = G.to_subgraph(4, 12, multigraph=True, edge_interval_data=True)
+        >>> type(M)
+        <class 'networkx.classes.multigraph.MultiGraph'>
+        >>> list(M.edges(data=True))
+        [(1, 2, {'end': 10, 'begin': 3}), (2, 4, {'end': 11, 'begin': 1}), (2, 4, {'end': 15, 'begin': 8})]
         """
-
-        # nodes with no edges will be discarded
-        # getting all edges within interval
 
         if end <= begin:
             raise NetworkXError("IntervalGraph: subgraph duration must be strictly bigger than zero: "
@@ -802,15 +917,32 @@ class IntervalGraph(object):
 
         Examples
         --------
-        >>> G = nx.Graph()   # or DiGraph, MultiGraph, MultiDiGraph, etc
-        >>> G.add_edges_from([(0, 1), (1, 2)]) # using a list of edge tuples
-        >>> e = zip(range(0, 3), range(1, 4))
-        >>> G.add_edges_from(e) # Add the path graph 0-1-2-3
+        Snapshots of NetworkX Graph
 
-        Associate data to edges
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11), (6, 4, 12, 19), (2, 4, 8, 15)])
+        >>> S, l = G.to_snapshots(2, edge_interval_data=True, return_length=True)
+        >>> S
+        [<networkx.classes.graph.Graph object at 0x100000>, <networkx.classes.graph.Graph object at 0x150d00>]
+        >>> l
+        9.0
+        >>> for g in S:
+        >>> ... g.edges(data=True))
+        [(1, 2, {'begin': 3, 'end': 10}), (2, 4, {'begin': 8, 'end': 15})]
+        [(2, 4, {'begin': 8, 'end': 15}), (4, 6, {'begin': 12, 'end': 19})]
 
-        >>> G.add_edges_from([(1, 2), (2, 3)], weight=3)
-        >>> G.add_edges_from([(3, 4), (1, 4)], label='WN2898')
+        Snapshots of NetworkX MultiGraph
+
+        >>> S, l = G.to_snapshots(3, multigraph=True, edge_interval_data=True, return_length=True)
+        >>> S
+        [<networkx.classes.multigraph.MultiGraph object at 0x1060d40b8>, <networkx.classes.multigraph.MultiGraph object at 0x151020c9e8>, <networkx.classes.multigraph.MultiGraph object at 0x151021d390>]
+        >>> l
+        6.0
+        >>> for g in S:
+        >>> ... g.edges(data=True))
+        [(1, 2, {'end': 10, 'begin': 3}), (2, 4, {'end': 11, 'begin': 1})]
+        [(1, 2, {'end': 10, 'begin': 3}), (2, 4, {'end': 11, 'begin': 1}), (2, 4, {'end': 15, 'begin': 8}), (4, 6, {'end': 19, 'begin': 12})]
+        [(2, 4, {'end': 15, 'begin': 8}), (4, 6, {'end': 19, 'begin': 12})]
         """
 
         if number_of_snapshots < 2 or type(number_of_snapshots) is not int:
@@ -839,8 +971,9 @@ class IntervalGraph(object):
     @staticmethod
     def load_from_txt(path, delimiter=" ", nodetype=None, comments="#"):
         """Read interval graph in from path.
-           Every line in the file must be an edge in the following format: "node, node, begin, end".
-           Both times must be integers.
+           Every line in the file must be an edge in the following format: "node node begin end".
+           Both interval times must be integers. Nodes can be any hashable objects.
+
         Parameters
         ----------
         path : string or file
@@ -857,41 +990,23 @@ class IntervalGraph(object):
 
         Returns
         -------
-        IG: DyNetworkX IntervalGraph
+        G: IntervalGraph
             The graph corresponding to the lines in edge list.
 
         Examples
         --------
-        >>> G=nx.path_graph(4)
-        >>> nx.write_adjlist(G, "test.adjlist")
-        >>> G=nx.read_adjlist("test.adjlist")
-
-        The path can be a filehandle or a string with the name of the file. If a
-        filehandle is provided, it has to be opened in 'rb' mode.
-
-        >>> fh=open("test.adjlist", 'rb')
-        >>> G=nx.read_adjlist(fh)
-
-        Filenames ending in .gz or .bz2 will be compressed.
-
-        >>> nx.write_adjlist(G,"test.adjlist.gz")
-        >>> G=nx.read_adjlist("test.adjlist.gz")
+        >>> G=dnx.IntervalGraph.load_from_txt("my_dygraph.txt")
 
         The optional nodetype is a function to convert node strings to nodetype.
 
         For example
 
-        >>> G=nx.read_adjlist("test.adjlist", nodetype=int)
+        >>> G=dnx.IntervalGraph.load_from_txt("my_dygraph.txt", nodetype=int)
 
         will attempt to convert all nodes to integer type.
 
         Since nodes must be hashable, the function nodetype must return hashable
         types (e.g. int, float, str, frozenset - or tuples of those, etc.)
-
-        Notes
-        -----
-        This format does not store graph or node data.
-        Both times must be integers.
         """
 
         ig = IntervalGraph()
