@@ -441,7 +441,7 @@ class IntervalGraph(object):
             Must be bigger than begin.
             Note that the default value is shifted up by 1 to make it an inclusive end.
         data : string or bool, optional (default=False)
-            The node attribute returned in 2-tuple (n, ddict[data]).
+            The node attribute returned in 2-tuple (n, dict[data]).
             If False, return just the nodes n.
         default : value, optional (default=None)
             Value used for nodes that don't have the requested attribute.
@@ -754,68 +754,122 @@ class IntervalGraph(object):
 
         All edges which are present within the given interval.
 
-        All parameters are optional. u and v can be thought of as constraints.
+        All parameters are optional. `u` and `v` can be thought of as constraints.
         If no node is defined, all edges within the interval are returned.
-        If one node is defined, all edges which has that node as one end,
-        will be returned, and so on.
-
-        TODO: Finish implementation.
+        If one node is defined, all edges which have that node as one end,
+        will be returned, and finally if both nodes are defined then all
+        edges between the two nodes are returned.
 
         Parameters
         ----------
         u, v : nodes, optional (default=None)
             Nodes can be, for example, strings or numbers.
             Nodes must be hashable (and not None) Python objects.
+            If the node does not exist in the graph, a key error is raised.
         begin: integer, optional  (default= beginning of the entire interval graph)
-            Inclusive beginning time of the node appearing in the interval graph.
+            Inclusive beginning time of the edge appearing in the interval graph.
         end: integer, optional  (default= end of the entire interval graph + 1)
-            Non-inclusive ending time of the node appearing in the interval graph.
+            Non-inclusive ending time of the edge appearing in the interval graph.
             Must be bigger than begin.
             Note that the default value is shifted up by 1 to make it an inclusive end.
         data : string or bool, optional (default=False)
-            The node attribute returned in 2-tuple (n, ddict[data]).
-            If False, return just the nodes n.
+            If True, return 2-tuple (Interval object, dict of attributes).
+            If False, return just the Interval objects.
+            If string (name of the attribute), return 2-tuple (Interval object, attribute value).
         default : value, optional (default=None)
-            Value used for nodes that don't have the requested attribute.
-            Only relevant if data is not True or False.
+            Default Value to be used for edges that don't have the requested attribute.
+            Only relevant if `data` is a string (name of an attribute).
 
         Returns
         -------
         List of Interval objects
             An interval object has the following format: (begin, end, (u, v))
 
-            When called, if data is False, a list of interval objects.
-            Otherwise a list of 2-tuples (Interval, attribute value)
-            where data is True.
+            When called, if `data` is False, a list of interval objects.
+            If `data` is True, a list of 2-tuples: (Interval, dict of attribute(s) with values),
+            If `data` is a string, a list of 2-tuples (Interval, attribute value).
 
         Examples
         --------
-        There are two simple ways of getting a list of all edges in the graph:
-
+        To get a list of all edges:
         >>> G = dnx.IntervalGraph()
         >>> G.add_edges_from([(1, 2, 3, 10), (2, 4, 1, 11), (6, 4, 12, 19), (2, 4, 8, 15)])
         >>> G.edges()
+        [Interval(8, 15, (2, 4)), Interval(3, 10, (1, 2)), Interval(1, 11, (2, 4)), Interval(12, 19, (6, 4))]
 
-        To get the edges data along with the intervals:
+        To get edges which appear in a specific interval:
+        >>> G.edges(begin=10)
+        [Interval(12, 19, (6, 4)), Interval(1, 11, (2, 4)), Interval(8, 15, (2, 4))]
+        >>> G.edges(end=5)
+        [Interval(3, 10, (1, 2)), Interval(1, 11, (2, 4))]
+        >>> G.edges(begin=2, end=4)
+        [Interval(3, 10, (1, 2)), Interval(1, 11, (2, 4))]
 
-        >>> G.add_nodes_from([(1, {'time': '1pm'}), (2, {'time': '2pm'}), (4, {'time': '4pm'}), (6, {'day': 'Friday'})])
-        >>> G.edges(data="time")
-        >>> G.edges(data="time", default="5pm")
+        To get edges with either of the two nodes being defined:
+        >>> G.edges(u=2)
+        [Interval(3, 10, (1, 2)), Interval(1, 11, (2, 4)), Interval(8, 15, (2, 4))]
+        >>> G.edges(u=2, begin=11)
+        [Interval(1, 11, (2, 4)), Interval(8, 15, (2, 4))]
+        >>> G.edges(u=2, v=4, end=8)
+        [Interval(1, 11, (2, 4))]
+        >>> G.edges(u=1, v=6)
+        []
 
-        To get edges which appear in a specific interval.
-
-        >>> G.edges(begin=11, data=True)
-        >>> G.edges(begin=4, end=12) # non-inclusive end
+        To get a list of edges with data:
+        >>> G = dnx.IntervalGraph()
+        >>> G.add_edge(1, 3, 1, 4, weight=8, height=18)
+        >>> G.add_edge(1, 2, 3, 10, weight=10)
+        >>> G.add_edge(2, 6, 2, 10)
+        >>> G.edges(data="weight")
+        [(Interval(2, 8, (2, 3)), None), (Interval(3, 10, (1, 2)), 10), (Interval(1, 4, (1, 3)), 8)]
+        >>> G.edges(data="weight", default=5)
+        [(Interval(2, 8, (2, 3)), 5), (Interval(3, 10, (1, 2)), 10), (Interval(1, 4, (1, 3)), 8)]
+        >>> G.edges(data=True)
+        [(Interval(2, 8, (2, 3)), {}), (Interval(3, 10, (1, 2)), {'weight': 10}), (Interval(1, 4, (1, 3)), {'height': 18, 'weight': 8})]
+        >>> G.edges(u=1, begin=5, end=9, data="weight")
+        [(Interval(3, 10, (1, 2)), 10)]
         """
 
-        # TODO: to be completed, may need separation
-        if begin is None and end is None:
-            if u is None and v is None:
-                return list(self.tree.all_intervals)
-            elif u is None:
-                return list(self._adj[u].keys())
-            elif v is None:
-                return list(self._adj[v].keys())
+        # If non of the nodes are defined the interval tree is queried for the list of edges,
+        # otherwise the edges are returned based on the nodes in the self._adj.o
+        if u is None and v is None:
+            if begin is None and end is None:
+                iedges = self.tree.all_intervals
+            # interval filtering
+            else:
+                if begin is None:
+                    begin = self.tree.begin()
+                if end is None:
+                    end = self.tree.end() + 1
+
+                iedges = self.tree[begin:end]
+
+        else:
+            # Node filtering
+            if u is not None and v is not None:
+               iedges = [iv for iv in self._adj[u].keys() if iv.data[0] == v or iv.data[1] == v]
+            elif u is not None:
+                iedges = self._adj[u].keys()
+            else:
+                iedges = self._adj[v].keys()
+
+            # Interval filtering
+            if begin is not None and end is not None:
+                iedges = [iv for iv in iedges if iv.end >= begin and iv.begin < end]
+            elif begin is not None:
+                iedges = [iv for iv in iedges if iv.end >= begin]
+            elif end is not None:
+                iedges = [iv for iv in iedges if iv.begin < end]
+
+        # Appending attribute data if needed
+        if data is False:
+            return iedges if isinstance(iedges, list) else list(iedges)
+
+        if data is True:
+            return [(iv, self._adj[iv.data[0]][iv]) for iv in iedges]
+
+        return [(iv, self._adj[iv.data[0]][iv][data]) if data in self._adj[iv.data[0]][iv].keys() else
+                (iv, default) for iv in iedges]
 
     def remove_edge(self, u, v, begin=None, end=None, overlapping=True):
         """Remove the edge between u and v in the interval graph,
