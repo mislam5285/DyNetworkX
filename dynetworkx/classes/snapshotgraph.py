@@ -1,15 +1,49 @@
 from networkx.classes.graph import Graph
 
+
 class SnapshotGraph(object):
     def __init__(self, **attr):
         self.graphs = {}
         self.graph.update(attr)
         self.snapshots = []
 
+    def generator(self, start, end):
+        snaps_traveled = 0
+        snaps = 0
+
+        while snaps < len(self.snapshots):
+            iters = 0
+            # if the snaps traveled plus the current snapshot is less than start
+            # just get the length of the compressed snapshot, and keep moving
+            # - Reduces time complexity to O(len(snapshots))
+
+            if snaps_traveled + self.snapshots[snaps][1] < start:
+                snaps_traveled += self.snapshots[snaps][1]
+                snaps += 1
+            else:
+                while iters < self.snapshots[snaps][1]:
+                    if (snaps_traveled < end) and (snaps_traveled >= start):
+                        yield self.snapshots[snaps][0]
+                    snaps_traveled += 1
+
+                    if snaps_traveled >= end:
+                        return
+                    iters += 1
+                snaps += 1
+
     def add_snapshot(self, edges):
+        # can store snapshots in a list with a tuple for compressing the memory space it takes up
+        # eg. [(s1, 10), (s2, 5), (s3, 1), etc and on]
+        # then need method for getting them ans uncompressing
+        # - would be nice to use generator? saves on memory at least
         g = Graph()
         g.add_weighted_edges_from(edges)
-        self.snapshots.append(g)
+
+        # compress graph
+        if self.snapshots and (g == self.snapshots[len(self.snapshots) - 1][0]):
+            self.snapshots[len(self.snapshots) - 1][1] += 1
+        else:
+            self.snapshots.append((g, 1))
 
     def subgraph(self, nodes):
         """ Nodes is a list of nodes that should be found in each subgraph"""
@@ -23,6 +57,8 @@ class SnapshotGraph(object):
         return subgraph
 
     def degree(self):
+        # returns a list of degrees for each graph snapshot in snapshots
+        # use generator to create list of degrees
         return [g.degree() for g in self.snapshots]
 
     def number_of_nodes(self):
