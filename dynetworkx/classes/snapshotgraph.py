@@ -56,10 +56,21 @@ class SnapshotGraph(object):
         subgraph.graph = self.graph
         return subgraph
 
-    def degree(self):
+    def degree(self, sbunch=None, nbunch=None):
         # returns a list of degrees for each graph snapshot in snapshots
         # use generator to create list of degrees
-        return [g.degree() for g in self.snapshots]
+        graph_list = list(self.generator(min(sbunch), max(sbunch)))
+        graph_list = [graph_list[index] for index in sbunch]
+
+        return_degrees = []
+
+        for g in graph_list:
+            node_list = list(g.nodes)
+            for node in node_list:
+                if node in nbunch:
+                    return_degrees.append(node.degree())
+
+        return return_degrees
 
     def number_of_nodes(self):
         return [g.number_of_nodes() for g in self.snapshots]
