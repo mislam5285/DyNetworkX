@@ -59,8 +59,12 @@ class SnapshotGraph(object):
     def degree(self, sbunch=None, nbunch=None):
         # returns a list of degrees for each graph snapshot in snapshots
         # use generator to create list of degrees
-        graph_list = list(self.generator(min(sbunch), max(sbunch)))
-        graph_list = [graph_list[index] for index in sbunch]
+        min_index = min(sbunch)
+        max_index = max(sbunch)
+        # get all indexes between min and max
+        graph_list = list(self.generator(min_index, max_index))
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
 
         return_degrees = []
 
@@ -72,29 +76,93 @@ class SnapshotGraph(object):
 
         return return_degrees
 
-    def number_of_nodes(self):
-        return [g.number_of_nodes() for g in self.snapshots]
+    def number_of_nodes(self, sbunch=None):
+        # returns a list of the number of nodes in each graph in the range
+        min_index = min(sbunch)
+        max_index = max(sbunch)
+        # get all indexes between min and max
+        graph_list = list(self.generator(min_index, max_index))
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
 
-    def order(self):
-        return [g.order() for g in self.snapshots]
+        return [g.number_of_nodes() for g in graph_list]
+
+    def order(self, sbunch=None):
+        # returns a list of the order of the graph in the range
+        min_index = min(sbunch)
+        max_index = max(sbunch)
+        # get all indexes between min and max
+        graph_list = list(self.generator(min_index, max_index))
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
+
+        return [g.order() for g in graph_list]
 
     def has_node(self, n):
-        return [g.has_node() for g in self.snapshots]
+        # returns a list of the order of the graph in the range
+        min_index = min(sbunch)
+        max_index = max(sbunch)
+        # get all indexes between min and max
+        graph_list = list(self.generator(min_index, max_index))
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
 
-    def degree(self, nbunch=None, weight=None):
+        return [g.has_node(n) for g in graph_list]
+
+    def degree(self, sbunch=None, nbunch=None, weight=None):
         return [g.degree() for g in self.snapshots]
 
     def is_multigraph(self):
-        return [g.is_multigraph() for g in self.snapshots]
+        # returns a list of the order of the graph in the range
+        min_index = min(sbunch)
+        max_index = max(sbunch)
+        # get all indexes between min and max
+        graph_list = list(self.generator(min_index, max_index))
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
+
+        return [g.is_multigraph() for g in graph_list]
 
     def is_directed(self):
-        return [g.is_directed() for g in self.snapshots]
+        # returns a list of the order of the graph in the range
+        min_index = min(sbunch)
+        max_index = max(sbunch)
+        # get all indexes between min and max
+        graph_list = list(self.generator(min_index, max_index))
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
+
+        return [g.is_directed() for g in graph_list]
 
     def to_directed(self):
-        return [g.to_directed() for g in self.snapshots]
+        # returns a list of the order of the graph in the range
+        min_index = min(sbunch)
+        max_index = max(sbunch)
+        # get all indexes between min and max
+        graph_list = list(self.generator(min_index, max_index))
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
+
+        return [g.to_directed() for g in graph_list]
 
     def to_undirected(self):
-        return [g.to_undirected() for g in self.snapshots]
+        # returns a list of the order of the graph in the range
+        min_index = min(sbunch)
+        max_index = max(sbunch)
+        # get all indexes between min and max
+        graph_list = list(self.generator(min_index, max_index))
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
+
+        return [g.to_undirected() for g in graph_list]
 
     def size(self, weight=None):
-        return [g.size() for g in self.snapshots]
+        # returns a list of the order of the graph in the range
+        min_index = min(sbunch)
+        max_index = max(sbunch)
+        # get all indexes between min and max
+        graph_list = list(self.generator(min_index, max_index))
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
+
+        return [g.size() for g in graph_list]
