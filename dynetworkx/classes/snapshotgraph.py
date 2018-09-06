@@ -6,8 +6,21 @@ class SnapshotGraph(object):
         self.graphs = {}
         self.graph.update(attr)
         self.snapshots = []
+        self.total_snapshots = 0
 
     def generator(self, start, end):
+        """
+
+        Parameters
+        ----------
+        start : Inclusive index of first desired graph
+        end : Non-inclusive ending index of graph
+
+        Yields
+        -------
+        NetworkX graph object for current index in snapshot graph
+
+        """
         snaps_traveled = 0
         snaps = 0
 
@@ -31,11 +44,18 @@ class SnapshotGraph(object):
                     iters += 1
                 snaps += 1
 
-    def add_snapshot(self, edges):
-        # can store snapshots in a list with a tuple for compressing the memory space it takes up
-        # eg. [(s1, 10), (s2, 5), (s3, 1), etc and on]
-        # then need method for getting them ans uncompressing
-        # - would be nice to use generator? saves on memory at least
+    def add_snapshot(self, edges, num_in_seq=None):
+        """
+
+        Parameters
+        ----------
+        edges : List of edges to include in time slot of snapshot graph
+
+        Returns
+        -------
+
+        """
+        # @TODO use num_in_seq to add things far in the future and fill in till then
         g = Graph()
         g.add_weighted_edges_from(edges)
 
@@ -45,18 +65,52 @@ class SnapshotGraph(object):
         else:
             self.snapshots.append((g, 1))
 
-    def subgraph(self, nodes):
-        """ Nodes is a list of nodes that should be found in each subgraph"""
-        if len(nodes) != len(self.snapshots):
-            raise ValueError('node list({}) must be equal in length to number of snapshots({})'.format(len(nodes), len(self.snapshots)))
+    def subgraph(self, nbunch=None, sbunch=None):
+        """
+        Nodes is a list of nodes that should be found in each subgraph
 
+        Parameters
+        ----------
+        sbunch : List of indexes for snapshots you are interested in.
+        nbunch : List of nodes you are interested in.
+
+        Returns
+        -------
+            List of tuples containing the degrees of each node in each snapshot.
+        """
+
+        min_index = min(sbunch)
+        max_index = max(sbunch)
+
+        if len(nodes) != self.total_snapshots:
+            raise ValueError('node list({}) must be equal in length to number of desired snapshots({})'.format(len(nodes), max_index - min_index))
+
+        snapshot_graphs = list(self.generator(min_index, max_index))
         subgraph = SnapshotGraph()
-        for snapshot, node_list in zip(self.snapshots, nodes):
-            subgraph.snapshots.append(snapshot.subgraph(node_list))
-        subgraph.graph = self.graph
+
+        if (len(nbunch) == 1) and (max_index - min_index) > 1:
+            for snapshot in snapshot_graphs:
+                subgraph.add_snapshot(snapshot.subgraph(nbunch))
+
+        else:
+            for snapshot, node_list in zip(snapshot_graphs, nbunch):
+                subgraph.add_snapshot(snapshot.subgraph(node_list))
+            #subgraph.graph = self.graph
         return subgraph
 
-    def degree(self, sbunch=None, nbunch=None):
+    def degree(self, sbunch=None, nbunch=None, weight=None):
+        """
+        Return a list of tuples containing the degrees of each node in each snapshot
+
+        Parameters
+        ----------
+        sbunch : List of indexes for snapshots you are interested in
+        nbunch : List of nodes you are interested in
+
+        Returns
+        -------
+            List of tuples containing the degrees of each node in each snapshot
+        """
         # returns a list of degrees for each graph snapshot in snapshots
         # use generator to create list of degrees
         min_index = min(sbunch)
@@ -72,11 +126,21 @@ class SnapshotGraph(object):
             node_list = list(g.nodes)
             for node in node_list:
                 if node in nbunch:
-                    return_degrees.append(node.degree())
+                    return_degrees.append(node.degree(weight=weight))
 
         return return_degrees
 
     def number_of_nodes(self, sbunch=None):
+        """
+
+        Parameters
+        ----------
+        sbunch: List of indexes for snapshots you are interested in.
+
+        Returns
+        -------
+
+        """
         # returns a list of the number of nodes in each graph in the range
         min_index = min(sbunch)
         max_index = max(sbunch)
@@ -88,6 +152,16 @@ class SnapshotGraph(object):
         return [g.number_of_nodes() for g in graph_list]
 
     def order(self, sbunch=None):
+        """
+
+        Parameters
+        ----------
+        sbunch: List of indexes for snapshots you are interested in.
+
+        Returns
+        -------
+
+        """
         # returns a list of the order of the graph in the range
         min_index = min(sbunch)
         max_index = max(sbunch)
@@ -98,7 +172,17 @@ class SnapshotGraph(object):
 
         return [g.order() for g in graph_list]
 
-    def has_node(self, n):
+    def has_node(self, n, sbunch=None):
+        """
+
+        Parameters
+        ----------
+        n
+
+        Returns
+        -------
+
+        """
         # returns a list of the order of the graph in the range
         min_index = min(sbunch)
         max_index = max(sbunch)
@@ -109,10 +193,17 @@ class SnapshotGraph(object):
 
         return [g.has_node(n) for g in graph_list]
 
-    def degree(self, sbunch=None, nbunch=None, weight=None):
-        return [g.degree() for g in self.snapshots]
+    def is_multigraph(self, sbunch=None):
+        """
 
-    def is_multigraph(self):
+        Parameters
+        ----------
+        sbunch: List of indexes for snapshots you are interested in.
+
+        Returns
+        -------
+
+        """
         # returns a list of the order of the graph in the range
         min_index = min(sbunch)
         max_index = max(sbunch)
@@ -123,7 +214,17 @@ class SnapshotGraph(object):
 
         return [g.is_multigraph() for g in graph_list]
 
-    def is_directed(self):
+    def is_directed(self, sbunch=None):
+        """
+
+        Parameters
+        ----------
+        sbunch: List of indexes for snapshots you are interested in.
+
+        Returns
+        -------
+
+        """
         # returns a list of the order of the graph in the range
         min_index = min(sbunch)
         max_index = max(sbunch)
@@ -134,7 +235,17 @@ class SnapshotGraph(object):
 
         return [g.is_directed() for g in graph_list]
 
-    def to_directed(self):
+    def to_directed(self, sbunch=None):
+        """
+
+        Parameters
+        ----------
+        sbunch: List of indexes for snapshots you are interested in.
+
+        Returns
+        -------
+
+        """
         # returns a list of the order of the graph in the range
         min_index = min(sbunch)
         max_index = max(sbunch)
@@ -145,7 +256,17 @@ class SnapshotGraph(object):
 
         return [g.to_directed() for g in graph_list]
 
-    def to_undirected(self):
+    def to_undirected(self, sbunch=None):
+        """
+
+        Parameters
+        ----------
+        sbunch: List of indexes for snapshots you are interested in.
+
+        Returns
+        -------
+
+        """
         # returns a list of the order of the graph in the range
         min_index = min(sbunch)
         max_index = max(sbunch)
@@ -156,7 +277,22 @@ class SnapshotGraph(object):
 
         return [g.to_undirected() for g in graph_list]
 
-    def size(self, weight=None):
+    def size(self, sbunch=None, weight=None):
+        """
+
+        Parameters
+        ----------
+        sbunch: List of indexes for snapshots you are interested in.
+
+        Parameters
+        ----------
+        weight
+
+        Returns
+        -------
+        List of
+
+        """
         # returns a list of the order of the graph in the range
         min_index = min(sbunch)
         max_index = max(sbunch)
@@ -165,4 +301,4 @@ class SnapshotGraph(object):
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
 
-        return [g.size() for g in graph_list]
+        return [g.size(weight=weight) for g in graph_list]
