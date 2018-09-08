@@ -3,7 +3,7 @@ from networkx.classes.graph import Graph
 
 class SnapshotGraph(object):
     def __init__(self, **attr):
-        self.graphs = {}
+        self.graph = {}
         self.graph.update(attr)
         self.snapshots = []
         self.total_snapshots = 0
@@ -44,12 +44,12 @@ class SnapshotGraph(object):
                     iters += 1
                 snaps += 1
 
-    def add_snapshot(self, edges, num_in_seq=None):
+    def add_snapshot(self, ebunch, num_in_seq=None, **attr):
         """
 
         Parameters
         ----------
-        edges : List of edges to include in time slot of snapshot graph
+        ebunch : List of edges to include in time slot of snapshot graph
 
         Returns
         -------
@@ -57,7 +57,9 @@ class SnapshotGraph(object):
         """
         # @TODO use num_in_seq to add things far in the future and fill in till then
         g = Graph()
-        g.add_weighted_edges_from(edges)
+
+        for e in ebunch:
+            g.add_weighted_edges_from(e)
 
         # compress graph
         if self.snapshots and (g == self.snapshots[len(self.snapshots) - 1][0]):
