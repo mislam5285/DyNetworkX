@@ -29,7 +29,7 @@ def load_data(filepath):
 
 
 data_path = "/nethome/msloma/Newfrat/newfrat/"
-clean_data(data_path)
+#clean_data(data_path)
 snaps = load_data(data_path)
 
 graphs = []
@@ -39,5 +39,12 @@ for val in snaps:
 
 snap_graph = SnapshotGraph()
 for g in graphs:
-    snap_graph.add_snapshot(g.edges())
+    snap_graph.add_snapshot(g.edges(data=True))
+
+snap_graph.add_snapshot(graphs[len(graphs)-1].edges(data=True))
+snap_graph.add_snapshot(graphs[0].edges(data=True), num_in_seq=100)
+snap_graph.insert(graphs[1], snap_len=1, num_in_seq=40)
+
+print(len(snap_graph))
+
 print()

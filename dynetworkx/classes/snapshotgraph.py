@@ -1,5 +1,6 @@
 from networkx.classes.graph import Graph
-
+import networkx as nx
+import networkx.algorithms.isomorphism as iso
 
 class SnapshotGraph(object):
     def __init__(self, **attr):
@@ -7,6 +8,9 @@ class SnapshotGraph(object):
         self.graph.update(attr)
         self.snapshots = []
         self.total_snapshots = 0
+
+    def __len__(self):
+        return self.total_snapshots
 
     def generator(self, start, end):
         """
@@ -44,6 +48,40 @@ class SnapshotGraph(object):
                     iters += 1
                 snaps += 1
 
+    def check_equality(self, g1, g2):
+        return (g1._adj == g2._adj) and (g1.edges == g2.edges) and (g1.nodes == g2.nodes)
+
+    def insert(self, g_to_insert, snap_len=None, num_in_seq=None):
+        snaps_traveled = 0
+        snaps = 0
+
+        while snaps < len(self.snapshots):
+            iters = 0
+
+            # if next snap length + total traveled thus far is less than slot needed,
+            # then just keep moving
+            if snaps_traveled + self.snapshots[snaps][1] < num_in_seq:
+                snaps_traveled += self.snapshots[snaps][1]
+                snaps += 1
+
+            elif snaps_traveled + self.snapshots[snaps][1] == num_in_seq:
+                self.snapshots.insert(snaps + 1, (g_to_insert, snap_len))
+
+            else:
+                iters = (num_in_seq - snaps_traveled)
+                snap_to_split = self.snapshots[snaps]
+                # change to first part of snap
+                self.snapshots[snaps] = (snap_to_split[0], iters)
+                # insert new snap
+                self.snapshots.insert(snaps + 1, (g_to_insert, snap_len))
+                # insert second part
+                self.snapshots.insert(snaps + 2, (snap_to_split[0], snap_to_split[1] - iters))
+
+                self.total_snapshots += snap_len
+                return
+
+            snaps += 1
+
     def add_snapshot(self, ebunch, num_in_seq=None, weight='weight', **attr):
         """
 
@@ -55,22 +93,33 @@ class SnapshotGraph(object):
         -------
 
         """
-        # @TODO use num_in_seq to add things far in the future and fill in till then
-
-        node_dict = ebunch._adjdict
-        edge_list = []
-        for node in node_dict.keys():
-            for neighbor, container in node_dict[node].items():
-                edge_list.append((node, neighbor, container[weight]))
-
+        # add snapshot assumes appendng to end, shoudl I combline with insert method? probs, but also need insert method
         g = Graph()
-        g.add_weighted_edges_from(edge_list)
+        g.add_weighted_edges_from(ebunch)
 
-        # compress graph
-        if self.snapshots and (g == self.snapshots[len(self.snapshots) - 1][0]):
-            self.snapshots[len(self.snapshots) - 1][1] += 1
-        else:
+        if (not num_in_seq) or (num_in_seq == self.total_snapshots + 1):
+            # compress graph
+            if self.snapshots and self.check_equality(g, self.snapshots[len(self.snapshots) - 1][0]):
+                last_snap_tup = self.snapshots[len(self.snapshots) - 1]
+                self.snapshots[len(self.snapshots) - 1] = (last_snap_tup[0], last_snap_tup[1] + 1)
+            else:
+                self.snapshots.append((g, 1))
+            # add one to the length
+            self.total_snapshots += 1
+
+        elif num_in_seq > self.total_snapshots:
+            # add difference to graph's length
+            last_snap_tup = self.snapshots[len(self.snapshots) - 1]
+            self.snapshots[len(self.snapshots) - 1] = (last_snap_tup[0],
+                                                       last_snap_tup[1] + num_in_seq - self.total_snapshots - 1)
+
+            # add in new snapshot
             self.snapshots.append((g, 1))
+
+            # add difference to the length
+            self.total_snapshots += (num_in_seq - self.total_snapshots)
+        else:
+            self.insert(g, snap_len=1, num_in_seq=num_in_seq)
 
     def subgraph(self, nbunch=None, sbunch=None):
         """
@@ -89,8 +138,8 @@ class SnapshotGraph(object):
         min_index = min(sbunch)
         max_index = max(sbunch)
 
-        if len(nodes) != self.total_snapshots:
-            raise ValueError('node list({}) must be equal in length to number of desired snapshots({})'.format(len(nodes), max_index - min_index))
+        #if len(nodes) != self.total_snapshots:
+        #    raise ValueError('node list({}) must be equal in length to number of desired snapshots({})'.format(len(nodes), max_index - min_index))
 
         snapshot_graphs = list(self.generator(min_index, max_index))
         subgraph = SnapshotGraph()
@@ -147,7 +196,10 @@ class SnapshotGraph(object):
 
         Parameters
         ----------
-        sbunch: List of indexes for snapshots you are interested in.
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of number of nodes in the snapshot. It is highly recommended that this list is sequential,
+            however it can be out of order.
 
         Returns
         -------
@@ -168,7 +220,10 @@ class SnapshotGraph(object):
 
         Parameters
         ----------
-        sbunch: List of indexes for snapshots you are interested in.
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of node orders. It is highly recommended that this list is sequential,
+            however it can be out of order.
 
         Returns
         -------
@@ -189,7 +244,13 @@ class SnapshotGraph(object):
 
         Parameters
         ----------
-        n
+        n: networkx node object
+            node to be checked for in requested snapshots
+
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of if the snapshot graph includes the node. It is highly recommended
+            that this list is sequential, however it can be out of order.
 
         Returns
         -------
