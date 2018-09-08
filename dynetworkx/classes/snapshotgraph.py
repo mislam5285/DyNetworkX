@@ -57,9 +57,7 @@ class SnapshotGraph(object):
         """
         # @TODO use num_in_seq to add things far in the future and fill in till then
         g = Graph()
-
-        for e in ebunch:
-            g.add_weighted_edges_from(e)
+        g.add_weighted_edges_from(ebunch)
 
         # compress graph
         if self.snapshots and (g == self.snapshots[len(self.snapshots) - 1][0]):
@@ -106,8 +104,13 @@ class SnapshotGraph(object):
 
         Parameters
         ----------
-        sbunch : List of indexes for snapshots you are interested in
-        nbunch : List of nodes you are interested in
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of node degrees. It is highly recommended that this list is sequential,
+            however it can be out of order.
+        nbunch : List of desired nodes
+            Each node in the nbunch list will be included in the returned list of
+            node degrees.
 
         Returns
         -------
