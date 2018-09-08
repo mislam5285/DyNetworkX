@@ -44,7 +44,7 @@ class SnapshotGraph(object):
                     iters += 1
                 snaps += 1
 
-    def add_snapshot(self, ebunch, num_in_seq=None, **attr):
+    def add_snapshot(self, ebunch, num_in_seq=None, weight='weight', **attr):
         """
 
         Parameters
@@ -56,8 +56,15 @@ class SnapshotGraph(object):
 
         """
         # @TODO use num_in_seq to add things far in the future and fill in till then
+
+        node_dict = ebunch._adjdict
+        edge_list = []
+        for node in node_dict.keys():
+            for neighbor, container in node_dict[node].items():
+                edge_list.append((node, neighbor, container[weight]))
+
         g = Graph()
-        g.add_weighted_edges_from(ebunch)
+        g.add_weighted_edges_from(edge_list)
 
         # compress graph
         if self.snapshots and (g == self.snapshots[len(self.snapshots) - 1][0]):
