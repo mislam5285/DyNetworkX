@@ -7,8 +7,73 @@ class SnapshotGraph(object):
         self.snapshots = []
         self.total_snapshots = 0
 
+    @property
+    def name(self):
+        """String identifier of the interval graph.
+
+        This interval graph attribute appears in the attribute dict SnapshotGraph.graph
+        keyed by the string `"name"`. as well as an attribute (technically
+        a property) `SnapshotGraph.name`. This is entirely user controlled.
+        """
+        return self.graph.get('name', '')
+
+    @name.setter
+    def name(self, s):
+        self.graph['name'] = s
+
+    def __str__(self):
+        """Return the snapshot graph name.
+
+        Returns
+        -------
+        name : string
+            The name of the snapshot graph.
+
+        Examples
+        --------
+        >>> G = dnx.SnapshotGraph(name='foo')
+        >>> str(G)
+        'foo'
+        """
+        return self.name
+
     def __len__(self):
+        """Return the number of snapshots. Use: 'len(G)'.
+
+        Returns
+        -------
+        nnodes : int
+            The number of snapshots in the graph.
+
+        @ Todo fix example
+        Examples
+        --------
+        >>> G = dnx.SnapshotGraph()
+        >>> G.add_nodes_from([2, 4, 5])
+        >>> len(G)
+        3
+
+        """
         return self.total_snapshots
+
+    def __contains__(self, graph):
+        """Return True if snap is a graph in the snapshot graph, False otherwise. Use: 'graph in G'.
+
+        @ todo fix example
+        Examples
+        --------
+        >>> G = dnx.SnapshotGraph()
+        >>> G.add_node(2)
+        >>> 2 in G
+        True
+        """
+        try:
+            for snapshot in self.snapshots:
+                if self.check_equality(snapshot[0], graph):
+                    return True
+            return False
+        except TypeError:
+            return False
 
     def generator(self, start, end):
         """
@@ -140,8 +205,9 @@ class SnapshotGraph(object):
         elif num_in_seq > self.total_snapshots:
             # add difference to graph's length
             last_snap_tup = self.snapshots[len(self.snapshots) - 1]
-            self.snapshots[len(self.snapshots) - 1] = (last_snap_tup[0],
-                                                       last_snap_tup[1] + num_in_seq - self.total_snapshots - 1)
+            self.snapshots[len(self.snapshots) - 1] = \
+                (last_snap_tup[0],
+                 last_snap_tup[1] + num_in_seq - self.total_snapshots - 1)
 
             # add in new snapshot
             self.snapshots.append((g, 1))
@@ -153,6 +219,8 @@ class SnapshotGraph(object):
 
     def subgraph(self, nbunch=None, sbunch=None):
         """
+        @ todo what should functionalioty of subgraph be in ssg?
+            sub of the snapshots? <this is it i think> all the snapshots with only some nodes?
         Nodes is a list of nodes that should be found in each subgraph
 
         Parameters
@@ -168,8 +236,8 @@ class SnapshotGraph(object):
         min_index = min(sbunch)
         max_index = max(sbunch)
 
-        #if len(nodes) != self.total_snapshots:
-        #    raise ValueError('node list({}) must be equal in length to number of desired snapshots({})'.format(len(nodes), max_index - min_index))
+        if len(sbunch) != len(nbunch):
+            raise ValueError('node list({}) must be equal in length to number of desired snapshots({})'.format(len(nbunch), len(sbunch)))
 
         snapshot_graphs = list(self.generator(min_index, max_index))
         subgraph = SnapshotGraph()
@@ -181,7 +249,7 @@ class SnapshotGraph(object):
         else:
             for snapshot, node_list in zip(snapshot_graphs, nbunch):
                 subgraph.add_snapshot(snapshot.subgraph(node_list))
-            #subgraph.graph = self.graph
+            subgraph.graph = self.graph
         return subgraph
 
     def degree(self, sbunch=None, nbunch=None, weight=None):
@@ -412,7 +480,7 @@ class SnapshotGraph(object):
     def get(self, sbunch=None):
         """
         Gets all graphs in snapshot graph requested in sbunch.
-        
+
         Parameters
         ----------
         sbunch
@@ -428,3 +496,6 @@ class SnapshotGraph(object):
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
         return graph_list
+
+# should there be add node and edge functionality?
+# should the be a replace method?
