@@ -45,7 +45,7 @@ Released under the 3-Clause BSD license. More information can be found under Lic
 History
 -------
 
-DyNetworkX is developed by IDEASLab @ The University of Toledo.
+DyNetworkX is developed by IDEAS Lab @ The University of Toledo.
 
 Documentation
 -------------
