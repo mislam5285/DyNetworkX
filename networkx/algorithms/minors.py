@@ -125,8 +125,11 @@ def quotient_graph(G, partition, edge_relation=None, node_data=None,
         :class:`frozenset` instances representing the blocks given in
         `partition`.
 
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : NetworkX graph
+        If specified, this must be an instance of a NetworkX graph
+        class. The nodes and edges of the quotient graph will be added
+        to this graph and returned. If not specified, the returned graph
+        will have the same type as the input graph.
 
     Returns
     -------
@@ -237,10 +240,7 @@ def _quotient_graph(G, partition, edge_relation=None, node_data=None,
     # Each node in the graph must be in exactly one block.
     if any(sum(1 for b in partition if v in b) != 1 for v in G):
         raise NetworkXException('each node must be in exactly one block')
-    if create_using is None:
-        H = G.__class__()
-    else:
-        H = nx.empty_graph(0, create_using)
+    H = G.fresh_copy() if create_using is None else create_using.fresh_copy()
     # By default set some basic information about the subgraph that each block
     # represents on the nodes in the quotient graph.
     if node_data is None:

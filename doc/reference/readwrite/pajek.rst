@@ -7,4 +7,6 @@ Pajek
    read_pajek
    write_pajek
    parse_pajek
-   generate_pajek
+
+
+

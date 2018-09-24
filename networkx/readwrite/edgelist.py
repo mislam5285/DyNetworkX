@@ -191,8 +191,8 @@ def parse_edgelist(lines, comments='#', delimiter=None,
        Marker for comment lines
     delimiter : string, optional
        Separator for node labels
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using: NetworkX graph container, optional
+       Use given NetworkX graph for holding nodes or edges.
     nodetype : Python type, optional
        Convert nodes to this type.
     data : bool or list of (label,type) tuples
@@ -246,7 +246,15 @@ def parse_edgelist(lines, comments='#', delimiter=None,
 
     """
     from ast import literal_eval
-    G = nx.empty_graph(0, create_using)
+    if create_using is None:
+        G = nx.Graph()
+    else:
+        try:
+            G = create_using
+            G.clear()
+        except:
+            raise TypeError("create_using input is not a NetworkX graph type")
+
     for line in lines:
         p = line.find(comments)
         if p >= 0:
@@ -312,8 +320,9 @@ def read_edgelist(path, comments="#", delimiter=None, create_using=None,
        The character used to indicate the start of a comment.
     delimiter : string, optional
        The string used to separate values.  The default is whitespace.
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : Graph container, optional,
+       Use specified container to build graph.  The default is networkx.Graph,
+       an undirected graph.
     nodetype : int, float, str, Python type, optional
        Convert node data from strings to specified type
     data : bool or list of (label,type) tuples
@@ -338,7 +347,7 @@ def read_edgelist(path, comments="#", delimiter=None, create_using=None,
     >>> fh.close()
 
     >>> G=nx.read_edgelist("test.edgelist", nodetype=int)
-    >>> G=nx.read_edgelist("test.edgelist",create_using=nx.DiGraph)
+    >>> G=nx.read_edgelist("test.edgelist",create_using=nx.DiGraph())
 
     Edgelist with data in a list:
 
@@ -419,8 +428,9 @@ def read_weighted_edgelist(path, comments="#", delimiter=None,
        The character used to indicate the start of a comment.
     delimiter : string, optional
        The string used to separate values.  The default is whitespace.
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : Graph container, optional,
+       Use specified container to build graph.  The default is networkx.Graph,
+       an undirected graph.
     nodetype : int, float, str, Python type, optional
        Convert node data from strings to specified type
     encoding: string, optional

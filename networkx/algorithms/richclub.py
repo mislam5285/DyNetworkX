@@ -20,7 +20,7 @@ __all__ = ['rich_club_coefficient']
 
 @not_implemented_for('directed')
 @not_implemented_for('multigraph')
-def rich_club_coefficient(G, normalized=True, Q=100, seed=None):
+def rich_club_coefficient(G, normalized=True, Q=100):
     r"""Returns the rich-club coefficient of the graph `G`.
 
     For each degree *k*, the *rich-club coefficient* is the ratio of the
@@ -44,9 +44,6 @@ def rich_club_coefficient(G, normalized=True, Q=100, seed=None):
         If `normalized` is True, perform `Q * m` double-edge
         swaps, where `m` is the number of edges in `G`, to use as a
         null-model for normalization.
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
 
     Returns
     -------
@@ -88,7 +85,7 @@ def rich_club_coefficient(G, normalized=True, Q=100, seed=None):
         # and use rich_club coefficient of R to normalize
         R = G.copy()
         E = R.number_of_edges()
-        nx.double_edge_swap(R, Q * E, max_tries=Q * E * 10, seed=seed)
+        nx.double_edge_swap(R, Q * E, max_tries=Q * E * 10)
         rcran = _compute_rc(R)
         rc = {k: v / rcran[k] for k, v in rc.items()}
     return rc

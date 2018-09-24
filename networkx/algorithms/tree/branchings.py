@@ -36,7 +36,6 @@ import random
 from operator import itemgetter
 
 import networkx as nx
-from networkx.utils import py_random_state
 
 from .recognition import *
 
@@ -58,9 +57,9 @@ STYLES = {
 INF = float('inf')
 
 
-@py_random_state(1)
 def random_string(L=15, seed=None):
-    return ''.join([seed.choice(string.ascii_letters) for n in range(L)])
+    random.seed(seed)
+    return ''.join([random.choice(string.ascii_letters) for n in range(L)])
 
 
 def _min_weight(weight):
@@ -79,8 +78,7 @@ def branching_weight(G, attr='weight', default=1):
     return sum(edge[2].get(attr, default) for edge in G.edges(data=True))
 
 
-@py_random_state(4)
-def greedy_branching(G, attr='weight', default=1, kind='max', seed=None):
+def greedy_branching(G, attr='weight', default=1, kind='max'):
     """
     Returns a branching obtained through a greedy algorithm.
 
@@ -103,9 +101,6 @@ def greedy_branching(G, attr='weight', default=1, kind='max', seed=None):
         `default` specifies what value it should take.
     kind : str
         The type of optimum to search for: 'min' or 'max' greedy branching.
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
 
     Returns
     -------
@@ -123,7 +118,7 @@ def greedy_branching(G, attr='weight', default=1, kind='max', seed=None):
 
     if attr is None:
         # Generate a random string the graph probably won't have.
-        attr = random_string(seed=seed)
+        attr = random_string()
 
     edges = [(u, v, data.get(attr, default))
              for (u, v, data) in G.edges(data=True)]
@@ -200,6 +195,10 @@ class MultiDiGraph_EdgeKey(nx.MultiDiGraph):
         for n in nbunch:
             self.remove_node(n)
 
+    def fresh_copy(self):
+        # Needed to make .copy() work
+        return MultiDiGraph_EdgeKey()
+
     def add_edge(self, u_for_edge, v_for_edge, key_for_edge, **attr):
         """
         Key is now required.
@@ -273,8 +272,7 @@ class Edmonds(object):
         # sure that our node names do not conflict with the real node names.
         self.template = random_string(seed=seed) + '_{0}'
 
-
-    def _init(self, attr, default, kind, style, preserve_attrs, seed):
+    def _init(self, attr, default, kind, style):
         if kind not in KINDS:
             raise nx.NetworkXException("Unknown value for `kind`.")
 
@@ -292,26 +290,15 @@ class Edmonds(object):
 
         if attr is None:
             # Generate a random attr the graph probably won't have.
-            attr = random_string(seed=seed)
+            attr = random_string()
 
         # This is the actual attribute used by the algorithm.
         self._attr = attr
-
-        # This attribute is used to store whether a particular edge is still
-        # a candidate. We generate a random attr to remove clashes with
-        # preserved edges
-        self.candidate_attr = 'candidate_' + random_string(seed=seed)
 
         # The object we manipulate at each step is a multidigraph.
         self.G = G = MultiDiGraph_EdgeKey()
         for key, (u, v, data) in enumerate(self.G_original.edges(data=True)):
             d = {attr: trans(data.get(attr, default))}
-
-            if preserve_attrs:
-                for (d_k, d_v) in data.items():
-                    if d_k != attr:
-                        d[d_k] = d_v
-
             G.add_edge(u, v, key, **d)
 
         self.level = 0
@@ -339,8 +326,7 @@ class Edmonds(object):
         # in circuit G^0 (depsite their weights being different).
         self.minedge_circuit = []
 
-    def find_optimum(self, attr='weight', default=1, kind='max',
-                     style='branching', preserve_attrs=False, seed=None):
+    def find_optimum(self, attr='weight', default=1, kind='max', style='branching'):
         """
         Returns a branching from G.
 
@@ -359,12 +345,6 @@ class Edmonds(object):
             branching is also an arborescence, then the branching is an
             optimal spanning arborescences. A given graph G need not have
             an optimal spanning arborescence.
-        preserve_attrs : bool
-            If True, preserve the other edge attributes of the original
-            graph (that are not the one passed to `attr`)
-        seed : integer, random_state, or None (default)
-            Indicator of random number generation state.
-            See :ref:`Randomness<randomness>`.
 
         Returns
         -------
@@ -372,7 +352,7 @@ class Edmonds(object):
             The branching.
 
         """
-        self._init(attr, default, kind, style, preserve_attrs, seed)
+        self._init(attr, default, kind, style)
         uf = self.uf
 
         # This enormous while loop could use some refactoring...
@@ -464,7 +444,7 @@ class Edmonds(object):
                 if acceptable:
                     dd = {attr: weight}
                     B.add_edge(u, v, edge[2], **dd)
-                    G[u][v][edge[2]][self.candidate_attr] = True
+                    G[u][v][edge[2]]['candidate'] = True
                     uf.union(u, v)
                     if Q_edges is not None:
                         #print("Edge introduced a simple cycle:")
@@ -530,8 +510,8 @@ class Edmonds(object):
 
                         for u, v, key, data in new_edges:
                             G.add_edge(u, v, key, **data)
-                            if self.candidate_attr in data:
-                                del data[self.candidate_attr]
+                            if 'candidate' in data:
+                                del data['candidate']
                                 B.add_edge(u, v, key, **data)
                                 uf.union(u, v)
 
@@ -540,7 +520,7 @@ class Edmonds(object):
 
         # (I3) Branch construction.
         # print(self.level)
-        H = self.G_original.__class__()
+        H = self.G_original.fresh_copy()
 
         def is_root(G, u, edgekeys):
             """
@@ -620,50 +600,37 @@ class Edmonds(object):
         for edgekey in edges:
             u, v, d = self.graphs[0].edge_index[edgekey]
             dd = {self.attr: self.trans(d[self.attr])}
-
-            # Optionally, preserve the other edge attributes of the original
-            # graph
-            if preserve_attrs:
-                for (key, value) in d.items():
-                    if key not in [self.attr, self.candidate_attr]:
-                        dd[key] = value
-
-            # TODO: make this preserve the key.
+            # TODO: make this preserve the key. In fact, make this use the
+            # same edge attributes as the original graph.
             H.add_edge(u, v, **dd)
 
         return H
 
 
-def maximum_branching(G, attr='weight', default=1, preserve_attrs=False):
+def maximum_branching(G, attr='weight', default=1):
     ed = Edmonds(G)
-    B = ed.find_optimum(attr, default, kind='max', style='branching',
-                        preserve_attrs=preserve_attrs)
+    B = ed.find_optimum(attr, default, kind='max', style='branching')
     return B
 
 
-def minimum_branching(G, attr='weight', default=1, preserve_attrs=False):
+def minimum_branching(G, attr='weight', default=1):
     ed = Edmonds(G)
-    B = ed.find_optimum(attr, default, kind='min', style='branching',
-                        preserve_attrs=preserve_attrs)
+    B = ed.find_optimum(attr, default, kind='min', style='branching')
     return B
 
 
-def maximum_spanning_arborescence(G, attr='weight', default=1,
-                                  preserve_attrs=False):
+def maximum_spanning_arborescence(G, attr='weight', default=1):
     ed = Edmonds(G)
-    B = ed.find_optimum(attr, default, kind='max', style='arborescence',
-                        preserve_attrs=preserve_attrs)
+    B = ed.find_optimum(attr, default, kind='max', style='arborescence')
     if not is_arborescence(B):
         msg = 'No maximum spanning arborescence in G.'
         raise nx.exception.NetworkXException(msg)
     return B
 
 
-def minimum_spanning_arborescence(G, attr='weight', default=1,
-                                  preserve_attrs=False):
+def minimum_spanning_arborescence(G, attr='weight', default=1):
     ed = Edmonds(G)
-    B = ed.find_optimum(attr, default, kind='min', style='arborescence',
-                        preserve_attrs=preserve_attrs)
+    B = ed.find_optimum(attr, default, kind='min', style='arborescence')
     if not is_arborescence(B):
         msg = 'No minimum spanning arborescence in G.'
         raise nx.exception.NetworkXException(msg)
@@ -682,9 +649,6 @@ attr : str
 default : float
     The value of the edge attribute used if an edge does not have
     the attribute `attr`.
-preserve_attrs : bool
-    If True, preserve the other attributes of the original graph (that are not
-    passed to `attr`)
 
 Returns
 -------

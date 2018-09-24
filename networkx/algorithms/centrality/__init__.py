@@ -12,5 +12,3 @@ from .harmonic import *
 from .katz import *
 from .load import *
 from .reaching import *
-from .percolation import *
-from .second_order import *

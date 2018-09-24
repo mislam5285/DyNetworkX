@@ -11,10 +11,10 @@ Greedy graph coloring using various strategies.
 """
 from collections import defaultdict, deque
 import itertools
+import random
 
 import networkx as nx
 from networkx.utils import arbitrary_element
-from networkx.utils import py_random_state
 from . import greedy_coloring_with_interchange as _interchange
 
 __all__ = ['greedy_color', 'strategy_connected_sequential',
@@ -34,18 +34,14 @@ def strategy_largest_first(G, colors):
     return sorted(G, key=G.degree, reverse=True)
 
 
-@py_random_state(2)
-def strategy_random_sequential(G, colors, seed=None):
+def strategy_random_sequential(G, colors):
     """Returns a random permutation of the nodes of ``G`` as a list.
 
     ``G`` is a NetworkX graph. ``colors`` is ignored.
 
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
     """
     nodes = list(G)
-    seed.shuffle(nodes)
+    random.shuffle(nodes)
     return nodes
 
 

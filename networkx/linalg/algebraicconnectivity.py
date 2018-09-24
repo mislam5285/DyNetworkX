@@ -11,7 +11,6 @@ from functools import partial
 import networkx as nx
 from networkx.utils import not_implemented_for
 from networkx.utils import reverse_cuthill_mckee_ordering
-from networkx.utils import random_state
 
 try:
     from numpy import array, asmatrix, asarray, dot, ndarray, ones, sqrt, zeros
@@ -294,13 +293,13 @@ def _get_fiedler_func(method):
     if method == "tracemin":  # old style keyword <v2.1
         method = "tracemin_pcg"
     if method in ("tracemin_pcg", "tracemin_chol", "tracemin_lu"):
-        def find_fiedler(L, x, normalized, tol, seed):
+        def find_fiedler(L, x, normalized, tol):
             q = 1 if method == 'tracemin_pcg' else min(4, L.shape[0] - 1)
-            X = asmatrix(seed.normal(size=(q, L.shape[0]))).T
+            X = asmatrix(normal(size=(q, L.shape[0]))).T
             sigma, X = _tracemin_fiedler(L, X, normalized, tol, method)
             return sigma[0], X[:, 0]
     elif method == 'lanczos' or method == 'lobpcg':
-        def find_fiedler(L, x, normalized, tol, seed):
+        def find_fiedler(L, x, normalized, tol):
             L = csc_matrix(L, dtype=float)
             n = L.shape[0]
             if normalized:
@@ -328,10 +327,9 @@ def _get_fiedler_func(method):
     return find_fiedler
 
 
-@random_state(5)
 @not_implemented_for('directed')
 def algebraic_connectivity(G, weight='weight', normalized=False, tol=1e-8,
-                           method='tracemin_pcg', seed=None):
+                           method='tracemin_pcg'):
     """Return the algebraic connectivity of an undirected graph.
 
     The algebraic connectivity of a connected undirected graph is the second
@@ -367,10 +365,6 @@ def algebraic_connectivity(G, weight='weight', normalized=False, tol=1e-8,
         'tracemin_chol' Cholesky factorization
         'tracemin_lu'   LU factorization
         =============== ========================================
-
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
 
     Returns
     -------
@@ -409,14 +403,13 @@ def algebraic_connectivity(G, weight='weight', normalized=False, tol=1e-8,
 
     find_fiedler = _get_fiedler_func(method)
     x = None if method != 'lobpcg' else _rcm_estimate(G, G)
-    sigma, fiedler = find_fiedler(L, x, normalized, tol, seed)
+    sigma, fiedler = find_fiedler(L, x, normalized, tol)
     return sigma
 
 
-@random_state(5)
 @not_implemented_for('directed')
 def fiedler_vector(G, weight='weight', normalized=False, tol=1e-8,
-                   method='tracemin_pcg', seed=None):
+                   method='tracemin_pcg'):
     """Return the Fiedler vector of a connected undirected graph.
 
     The Fiedler vector of a connected undirected graph is the eigenvector
@@ -453,10 +446,6 @@ def fiedler_vector(G, weight='weight', normalized=False, tol=1e-8,
         'tracemin_chol' Cholesky factorization
         'tracemin_lu'   LU factorization
         =============== ========================================
-
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
 
     Returns
     -------
@@ -495,13 +484,12 @@ def fiedler_vector(G, weight='weight', normalized=False, tol=1e-8,
     find_fiedler = _get_fiedler_func(method)
     L = nx.laplacian_matrix(G)
     x = None if method != 'lobpcg' else _rcm_estimate(G, G)
-    sigma, fiedler = find_fiedler(L, x, normalized, tol, seed)
+    sigma, fiedler = find_fiedler(L, x, normalized, tol)
     return fiedler
 
 
-@random_state(5)
 def spectral_ordering(G, weight='weight', normalized=False, tol=1e-8,
-                      method='tracemin_pcg', seed=None):
+                      method='tracemin_pcg'):
     """Compute the spectral_ordering of a graph.
 
     The spectral ordering of a graph is an ordering of its nodes where nodes
@@ -539,10 +527,6 @@ def spectral_ordering(G, weight='weight', normalized=False, tol=1e-8,
         'tracemin_lu'   LU factorization
         =============== ========================================
 
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
-
     Returns
     -------
     spectral_ordering : NumPy array of floats.
@@ -576,7 +560,7 @@ def spectral_ordering(G, weight='weight', normalized=False, tol=1e-8,
         if size > 2:
             L = nx.laplacian_matrix(G, component)
             x = None if method != 'lobpcg' else _rcm_estimate(G, component)
-            sigma, fiedler = find_fiedler(L, x, normalized, tol, seed)
+            sigma, fiedler = find_fiedler(L, x, normalized, tol)
             sort_info = zip(fiedler, range(size), component)
             order.extend(u for x, c, u in sorted(sort_info))
         else:

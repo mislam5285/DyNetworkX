@@ -21,11 +21,12 @@ See Also
 :mod:`edge_kcomponents` : algorithms for finding k-edge-connected components
 :mod:`connectivity` : algorithms for determening edge connectivity.
 """
+import random
 import math
 import sys
 import itertools as it
 import networkx as nx
-from networkx.utils import not_implemented_for, py_random_state
+from networkx.utils import not_implemented_for
 from collections import defaultdict, namedtuple
 
 __all__ = [
@@ -812,10 +813,7 @@ def unconstrained_bridge_augmentation(G):
         A2 = [tuple(leafs)]
     else:
         # Choose an arbitrary non-leaf root
-        try:
-            root = next(n for n, d in T.degree() if d > 1)
-        except StopIteration:  # no nodes found with degree > 1
-            return
+        root = next(n for n, d in T.degree() if d > 1)
         # order the leaves of C by (induced directed) preorder
         v2 = [n for n in nx.dfs_preorder_nodes(T, root) if T.degree(n) == 1]
         # connecting first half of the leafs in pre-order to the second
@@ -956,10 +954,7 @@ def weighted_bridge_augmentation(G, avail, weight=None):
     #     nx.least_common_ancestor on the reversed Tree.
 
     # Pick an arbitrary leaf from C as the root
-    try:
-        root = next(n for n, d in C.degree() if d == 1)
-    except StopIteration:  # no nodes found with degree == 1
-        return
+    root = next(n for n in C.nodes() if C.degree(n) == 1)
     # Root C into a tree TR by directing all edges away from the root
     # Note in their paper T directs edges towards the root
     TR = nx.dfs_tree(C, root)
@@ -1173,7 +1168,6 @@ else:
         rng.shuffle(input)
 
 
-@py_random_state(4)
 @not_implemented_for('multigraph')
 @not_implemented_for('directed')
 def greedy_k_edge_augmentation(G, k, avail=None, weight=None, seed=None):
@@ -1194,9 +1188,8 @@ def greedy_k_edge_augmentation(G, k, avail=None, weight=None, seed=None):
         key to use to find weights if ``avail`` is a set of 3-tuples.
         For more details, see :func:`k_edge_augmentation`.
 
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
+    seed : integer or None
+        seed for the random number generator used in this algorithm
 
     Yields
     ------
@@ -1237,7 +1230,7 @@ def greedy_k_edge_augmentation(G, k, avail=None, weight=None, seed=None):
 
     done = is_k_edge_connected(G, k)
     if done:
-        return
+        raise StopIteration()
     if avail is None:
         # all edges are available
         avail_uv = list(complement_edges(G))
@@ -1271,7 +1264,8 @@ def greedy_k_edge_augmentation(G, k, avail=None, weight=None, seed=None):
             'not able to k-edge-connect with available edges')
 
     # Randomized attempt to reduce the size of the solution
-    _compat_shuffle(seed, aug_edges)
+    rng = random.Random(seed)
+    _compat_shuffle(rng, aug_edges)
     for (u, v) in list(aug_edges):
         # Don't remove if we know it would break connectivity
         if H.degree(u) <= k or H.degree(v) <= k:

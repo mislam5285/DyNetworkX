@@ -9,7 +9,6 @@ Distance Measures
    center
    diameter
    eccentricity
-   extrema_bounding
    periphery
    radius
 

@@ -54,8 +54,6 @@ __all__ = ['balanced_tree',
 # -------------------------------------------------------------------
 
 def _tree_edges(n, r):
-    if n == 0:
-        return
     # helper function for trees
     # yields edges in rooted tree at 0 with n nodes and branching ratio r
     nodes = iter(range(n))
@@ -86,8 +84,9 @@ def full_rary_tree(r, n, create_using=None):
         branching factor of the tree
     n : int
         Number of nodes in the tree
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : Graph, optional (default None)
+        If provided this graph is cleared of nodes and edges and filled
+        with the new graph. Usually used to set the type of the graph.
 
     Returns
     -------
@@ -116,8 +115,9 @@ def balanced_tree(r, h, create_using=None):
     h : int
         Height of the tree.
 
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : Graph, optional (default None)
+        If provided this graph is cleared of nodes and edges and filled
+        with the new graph. Usually used to set the type of the graph.
 
     Returns
     -------
@@ -170,6 +170,8 @@ def barbell_graph(m1, m2, create_using=None):
     and Jim Fill's e-text on Random Walks on Graphs.
 
     """
+    if create_using is not None and create_using.is_directed():
+        raise NetworkXError("Directed Graph not supported")
     if m1 < 2:
         raise NetworkXError(
             "Invalid graph description, m1 should be >=2")
@@ -179,8 +181,6 @@ def barbell_graph(m1, m2, create_using=None):
 
     # left barbell
     G = complete_graph(m1, create_using)
-    if G.is_directed():
-        raise NetworkXError("Directed Graph not supported")
 
     # connecting path
     G.add_nodes_from(range(m1, m1 + m2 - 1))
@@ -205,8 +205,9 @@ def complete_graph(n, create_using=None):
     n : int or iterable container of nodes
         If n is an integer, nodes are from range(n).
         If n is a container of nodes, those nodes appear in the graph.
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : Graph, optional (default None)
+        If provided this graph is cleared of nodes and edges and filled
+        with the new graph. Usually used to set the type of the graph.
 
     Examples
     --------
@@ -264,8 +265,9 @@ def circulant_graph(n, offsets, create_using=None):
         The number of vertices the generated graph is to contain.
     offsets : list of integers
         A list of vertex offsets, $x_1$ up to $x_m$, as described above.
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : Graph, optional (default None)
+        If provided this graph is cleared of nodes and edges and filled
+        with the new graph. Usually used to set the type of the graph.
 
     Examples
     --------
@@ -313,8 +315,9 @@ def cycle_graph(n, create_using=None):
     n : int or iterable container of nodes
         If n is an integer, nodes are from `range(n)`.
         If n is a container of nodes, those nodes appear in the graph.
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : Graph, optional (default Graph())
+        If provided this graph is cleared of nodes and edges and filled
+        with the new graph. Usually used to set the type of the graph.
 
     Notes
     -----
@@ -335,12 +338,12 @@ def dorogovtsev_goltsev_mendes_graph(n, create_using=None):
     See: arXiv:/cond-mat/0112143 by Dorogovtsev, Goltsev and Mendes.
 
     """
+    if create_using is not None:
+        if create_using.is_directed():
+            raise NetworkXError("Directed Graph not supported")
+        if create_using.is_multigraph():
+            raise NetworkXError("Multigraph not supported")
     G = empty_graph(0, create_using)
-    if G.is_directed():
-        raise NetworkXError("Directed Graph not supported")
-    if G.is_multigraph():
-        raise NetworkXError("Multigraph not supported")
-
     G.add_edge(0, 1)
     if n == 0:
         return G
@@ -356,7 +359,7 @@ def dorogovtsev_goltsev_mendes_graph(n, create_using=None):
 
 
 @nodes_or_number(0)
-def empty_graph(n=0, create_using=None, default=nx.Graph):
+def empty_graph(n=0, create_using=None):
     """Return the empty graph with n nodes and zero edges.
 
     Parameters
@@ -364,17 +367,9 @@ def empty_graph(n=0, create_using=None, default=nx.Graph):
     n : int or iterable container of nodes (default = 0)
         If n is an integer, nodes are from `range(n)`.
         If n is a container of nodes, those nodes appear in the graph.
-    create_using : Graph Instance, Constructor or None
-        Indicator of type of graph to return.
-        If a Graph-type instance, then clear and use it.
-        If None, use the `default` constructor.
-        If a constructor, call it to create an empty graph.
-    default : Graph constructor (optional, default = nx.Graph)
-        The constructor to use if create_using is None.
-        If None, then nx.Graph is used.
-        This is used when passing an unknown `create_using` value
-        through your home-grown function to `empty_graph` and
-        you want a default constructor other than nx.Graph.
+    create_using : Graph, optional (default Graph())
+        If provided this graph is cleared of nodes and edges and filled
+        with the new graph. Usually used to set the type of the graph.
 
     Examples
     --------
@@ -391,20 +386,18 @@ def empty_graph(n=0, create_using=None, default=nx.Graph):
 
     Notes
     -----
-    The variable create_using should be a Graph Constructor or a
-    "graph"-like object. Constructors, e.g. `nx.Graph` or `nx.MultiGraph`
-    will be used to create the returned graph. "graph"-like objects
+    The variable create_using should point to a "graph"-like object that
     will be cleared (nodes and edges will be removed) and refitted as
     an empty "graph" with nodes specified in n. This capability
     is useful for specifying the class-nature of the resulting empty
     "graph" (i.e. Graph, DiGraph, MyWeirdGraphClass, etc.).
 
-    The variable create_using has three main uses:
+    The variable create_using has two main uses:
     Firstly, the variable create_using can be used to create an
     empty digraph, multigraph, etc.  For example,
 
     >>> n = 10
-    >>> G = nx.empty_graph(n, create_using=nx.DiGraph)
+    >>> G = nx.empty_graph(n, create_using=nx.DiGraph())
 
     will create an empty digraph on n nodes.
 
@@ -414,34 +407,15 @@ def empty_graph(n=0, create_using=None, default=nx.Graph):
     will empty G (i.e. delete all nodes and edges using G.clear())
     and then add n nodes and zero edges, and return the modified graph.
 
-    Thirdly, when constructing your home-grown graph creation function
-    you can use empty_graph to construct the graph by passing a user
-    defined create_using to empty_graph. In this case, if you want the
-    default constructor to be other than nx.Graph, specify `default`.
-
-    >>> def mygraph(n, create_using=None):
-    ...     G = nx.empty_graph(n, create_using, nx.MultiGraph)
-    ...     G.add_edges_from([(0, 1), (0, 1)])
-    ...     return G
-    >>> G = mygraph(3)
-    >>> G.is_multigraph()
-    True
-    >>> G = mygraph(3, nx.Graph)
-    >>> G.is_multigraph()
-    False
-
     See also create_empty_copy(G).
 
     """
     if create_using is None:
-        G = default()
-    elif hasattr(create_using, '_adj'):
-        # create_using is a NetworkX style Graph
-        create_using.clear()
-        G = create_using
+        # default empty graph is a simple graph
+        G = Graph()
     else:
-        # try create_using as constructor
-        G = create_using()
+        G = create_using
+        G.clear()
 
     n_name, nodes = n
     G.add_nodes_from(nodes)
@@ -457,9 +431,9 @@ def ladder_graph(n, create_using=None):
     Node labels are the integers 0 to 2*n - 1.
 
     """
-    G = empty_graph(2 * n, create_using)
-    if G.is_directed():
+    if create_using is not None and create_using.is_directed():
         raise NetworkXError("Directed Graph not supported")
+    G = empty_graph(2 * n, create_using)
     G.add_edges_from(pairwise(range(n)))
     G.add_edges_from(pairwise(range(n, 2 * n)))
     G.add_edges_from((v, v + n) for v in range(n))
@@ -480,8 +454,9 @@ def lollipop_graph(m, n, create_using=None):
 
         The nodes for m appear in the complete graph $K_m$ and the nodes
         for n appear in the path $P_n$
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : Graph, optional (default Graph())
+        If provided this graph is cleared of nodes and edges and filled
+        with the new graph. Usually used to set the type of the graph.
 
     Notes
     -----
@@ -498,6 +473,8 @@ def lollipop_graph(m, n, create_using=None):
     N = len(n_nodes)
     if isinstance(m, int):
         n_nodes = [len(m_nodes) + i for i in n_nodes]
+    if create_using is not None and create_using.is_directed():
+        raise NetworkXError("Directed Graph not supported")
     if M < 2:
         raise NetworkXError(
             "Invalid graph description, m should be >=2")
@@ -507,8 +484,6 @@ def lollipop_graph(m, n, create_using=None):
 
     # the ball
     G = complete_graph(m_nodes, create_using)
-    if G.is_directed():
-        raise NetworkXError("Directed Graph not supported")
     # the stick
     G.add_nodes_from(n_nodes)
     if N > 1:
@@ -538,8 +513,9 @@ def path_graph(n, create_using=None):
     n : int or iterable
         If an integer, node labels are 0 to n with center 0.
         If an iterable of nodes, the center is the first.
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : Graph, optional (default Graph())
+        If provided this graph is cleared of nodes and edges and filled
+        with the new graph. Usually used to set the type of the graph.
 
     """
     n_name, nodes = n
@@ -559,8 +535,9 @@ def star_graph(n, create_using=None):
     n : int or iterable
         If an integer, node labels are 0 to n with center 0.
         If an iterable of nodes, the center is the first.
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
+    create_using : Graph, optional (default Graph())
+        If provided this graph is cleared of nodes and edges and filled
+        with the new graph. Usually used to set the type of the graph.
 
     Notes
     -----
@@ -630,14 +607,15 @@ def wheel_graph(n, create_using=None):
     n : int or iterable
         If an integer, node labels are 0 to n with center 0.
         If an iterable of nodes, the center is the first.
-    create_using : NetworkX graph constructor, optional (default=nx.Graph)
-       Graph type to create. If graph instance, then cleared before populated.
-
+    create_using : Graph, optional (default Graph())
+        If provided this graph is cleared of nodes and edges and filled
+        with the new graph. Usually used to set the type of the graph.
     Node labels are the integers 0 to n - 1.
+
     """
     n_name, nodes = n
     if n_name == 0:
-        G = empty_graph(0, create_using)
+        G = empty_graph(0, create_using=create_using)
         return G
     G = star_graph(nodes, create_using)
     if len(G) > 2:

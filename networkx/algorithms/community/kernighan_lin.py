@@ -16,9 +16,10 @@ from __future__ import division
 from collections import defaultdict
 from itertools import islice
 from operator import itemgetter
+import random
 
 import networkx as nx
-from networkx.utils import not_implemented_for, py_random_state
+from networkx.utils import not_implemented_for
 from networkx.algorithms.community.community_utils import is_partition
 
 __all__ = ['kernighan_lin_bisection']
@@ -91,10 +92,8 @@ def _kernighan_lin_pass(G, A, B, weight):
     return gains
 
 
-@py_random_state(4)
 @not_implemented_for('directed')
-def kernighan_lin_bisection(G, partition=None, max_iter=10, weight='weight',
-                            seed=None):
+def kernighan_lin_bisection(G, partition=None, max_iter=10, weight='weight'):
     """Partition a graph into two blocks using the Kernighan–Lin
     algorithm.
 
@@ -116,11 +115,6 @@ def kernighan_lin_bisection(G, partition=None, max_iter=10, weight='weight',
     weight : key
         Edge data key to use as weight. If None, the weights are all
         set to one.
-
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
-        Only used if partition is None
 
     Returns
     -------
@@ -144,7 +138,7 @@ def kernighan_lin_bisection(G, partition=None, max_iter=10, weight='weight',
     # balanced partition.
     if partition is None:
         nodes = list(G)
-        seed.shuffle(nodes)
+        random.shuffle(nodes)
         h = len(nodes) // 2
         partition = (nodes[:h], nodes[h:])
     # Make a copy of the partition as a pair of sets.

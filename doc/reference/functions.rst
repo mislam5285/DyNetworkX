@@ -15,17 +15,9 @@ Graph
    info
    create_empty_copy
    is_directed
-   to_directed
-   to_undirected
-   is_empty
    add_star
    add_path
    add_cycle
-   subgraph
-   induced_subgraph
-   restricted_view
-   reverse_view
-   edge_subgraph
 
 
 Nodes
@@ -35,7 +27,6 @@ Nodes
 
    nodes
    number_of_nodes
-   neighbors
    all_neighbors
    non_neighbors
    common_neighbors
@@ -46,9 +37,9 @@ Edges
 .. autosummary::
    :toctree: generated/
 
+
    edges
    number_of_edges
-   density
    non_edges
 
 Self loops
@@ -65,8 +56,6 @@ Attributes
 .. autosummary::
    :toctree: generated/
 
-   is_weighted
-   is_negatively_weighted
    set_node_attributes
    get_node_attributes
    set_edge_attributes
@@ -80,3 +69,8 @@ Freezing graph structure
 
    freeze
    is_frozen
+
+
+
+
+

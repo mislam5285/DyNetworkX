@@ -11,7 +11,6 @@ Edges have different colors and alphas (opacity). Drawn using matplotlib.
 # Author: Rodrigo Dorantes-Gilardi (rodgdor@gmail.com)
 
 from __future__ import division
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import networkx as nx
 
@@ -30,10 +29,6 @@ edges = nx.draw_networkx_edges(G, pos, node_size=node_sizes, arrowstyle='->',
 # set alpha value for each edge
 for i in range(M):
     edges[i].set_alpha(edge_alphas[i])
-
-pc = mpl.collections.PatchCollection(edges, cmap=plt.cm.Blues)
-pc.set_array(edge_colors)
-plt.colorbar(pc)
 
 ax = plt.gca()
 ax.set_axis_off()

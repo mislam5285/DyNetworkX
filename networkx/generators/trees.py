@@ -7,11 +7,11 @@
 #
 # Authors:      Jeffrey Finkelstein <jeffrey.finkelstein@gmail.com>
 """Functions for generating trees."""
+import random
 from collections import defaultdict
 
 import networkx as nx
 from networkx.utils import generate_unique_node
-from networkx.utils import py_random_state
 
 __all__ = ['prefix_tree', 'random_tree']
 
@@ -156,7 +156,6 @@ def prefix_tree(paths):
 # > converting them into the corresponding trees is a straightforward
 # > method of generating uniformly distributed random labelled trees.
 #
-@py_random_state(1)
 def random_tree(n, seed=None):
     """Returns a uniformly random tree on `n` nodes.
 
@@ -164,9 +163,9 @@ def random_tree(n, seed=None):
     ----------
     n : int
         A positive integer representing the number of nodes in the tree.
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
+
+    seed : int
+        A seed for the random number generator.
 
     Returns
     -------
@@ -194,5 +193,6 @@ def random_tree(n, seed=None):
     # Cannot create a Prüfer sequence unless `n` is at least two.
     if n == 1:
         return nx.empty_graph(1)
-    sequence = [seed.choice(range(n)) for i in range(n - 2)]
+    random.seed(seed)
+    sequence = [random.choice(range(n)) for i in range(n - 2)]
     return nx.from_prufer_sequence(sequence)

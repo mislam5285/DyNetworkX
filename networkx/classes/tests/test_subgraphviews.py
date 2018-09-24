@@ -5,7 +5,7 @@ import networkx as nx
 
 
 class TestSubGraphView(object):
-    gview = staticmethod(nx.graphviews.SubGraph)
+    gview = nx.graphviews.SubGraph
     graph = nx.Graph
     hide_edges_filter = staticmethod(nx.filters.hide_edges)
     show_edges_filter = staticmethod(nx.filters.show_edges)
@@ -17,9 +17,7 @@ class TestSubGraphView(object):
     def test_hidden_nodes(self):
         hide_nodes = [4, 5, 111]
         nodes_gone = nx.filters.hide_nodes(hide_nodes)
-        gview = self.gview
-        print(gview)
-        G = gview(self.G, filter_node=nodes_gone)
+        G = self.gview(self.G, filter_node=nodes_gone)
         assert_equal(self.G.nodes - G.nodes, {4, 5})
         assert_equal(self.G.edges - G.edges, self.hide_edges_w_hide_nodes)
         if G.is_directed():
@@ -37,8 +35,7 @@ class TestSubGraphView(object):
     def test_hidden_edges(self):
         hide_edges = [(2, 3), (8, 7), (222, 223)]
         edges_gone = self.hide_edges_filter(hide_edges)
-        gview = self.gview
-        G = gview(self.G, filter_edge=edges_gone)
+        G = self.gview(self.G, filter_edge=edges_gone)
         assert_equal(self.G.nodes, G.nodes)
         if G.is_directed():
             assert_equal(self.G.edges - G.edges, {(2, 3)})
@@ -57,8 +54,7 @@ class TestSubGraphView(object):
 
     def test_shown_node(self):
         induced_subgraph = nx.filters.show_nodes([2, 3, 111])
-        gview = self.gview
-        G = gview(self.G, filter_node=induced_subgraph)
+        G = self.gview(self.G, filter_node=induced_subgraph)
         assert_equal(set(G.nodes), {2, 3})
         if G.is_directed():
             assert_equal(list(G[3]), [])
@@ -94,7 +90,7 @@ class TestSubGraphView(object):
 
 
 class TestSubDiGraphView(TestSubGraphView):
-    gview = staticmethod(nx.graphviews.SubDiGraph)
+    gview = nx.graphviews.SubDiGraph
     graph = nx.DiGraph
     hide_edges_filter = staticmethod(nx.filters.hide_diedges)
     show_edges_filter = staticmethod(nx.filters.show_diedges)
@@ -133,7 +129,7 @@ class TestSubDiGraphView(TestSubGraphView):
 
 # multigraph
 class TestMultiGraphView(TestSubGraphView):
-    gview = staticmethod(nx.graphviews.SubMultiGraph)
+    gview = nx.graphviews.SubMultiGraph
     graph = nx.MultiGraph
     hide_edges_filter = staticmethod(nx.filters.hide_multiedges)
     show_edges_filter = staticmethod(nx.filters.show_multiedges)
@@ -188,7 +184,7 @@ class TestMultiGraphView(TestSubGraphView):
 
 # multidigraph
 class TestMultiDiGraphView(TestMultiGraphView, TestSubDiGraphView):
-    gview = staticmethod(nx.graphviews.SubMultiDiGraph)
+    gview = nx.graphviews.SubMultiDiGraph
     graph = nx.MultiDiGraph
     hide_edges_filter = staticmethod(nx.filters.hide_multidiedges)
     show_edges_filter = staticmethod(nx.filters.show_multidiedges)

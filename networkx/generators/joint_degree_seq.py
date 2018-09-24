@@ -6,8 +6,9 @@
 """Generate graphs with a given joint degree """
 from __future__ import division
 
+import random
+
 import networkx as nx
-from networkx.utils import py_random_state
 
 __all__ = ['is_valid_joint_degree',
            'joint_degree_graph']
@@ -145,7 +146,6 @@ def _neighbor_switch(G, w, unsat, h_node_residual, avoid_node_id=None):
         unsat.remove(w_prime)
 
 
-@py_random_state(1)
 def joint_degree_graph(joint_degrees, seed=None):
     """ Generates a random simple graph with the given joint degree dictionary.
 
@@ -154,9 +154,8 @@ def joint_degree_graph(joint_degrees, seed=None):
     joint_degrees :  dictionary of dictionary of integers
         A joint degree dictionary in which entry ``joint_degrees[k][l]`` is the
         number of edges joining nodes of degree *k* with nodes of degree *l*.
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
+    seed : hashable object, optional
+        Seed for random number generator.
 
     Returns
     -------
@@ -205,6 +204,9 @@ def joint_degree_graph(joint_degrees, seed=None):
     if not is_valid_joint_degree(joint_degrees):
         msg = 'Input joint degree dict not realizable as a simple graph'
         raise nx.NetworkXError(msg)
+
+    if seed is not None:
+        random.seed(seed)
 
     # compute degree count from joint_degrees
     degree_count = {k: sum(l.values()) // k for k, l in joint_degrees.items() if k > 0}
@@ -259,8 +261,8 @@ def joint_degree_graph(joint_degrees, seed=None):
                 while n_edges_add > 0:
 
                     # randomly pick nodes v and w that have degrees k and l
-                    v = k_nodes[seed.randrange(k_size)]
-                    w = l_nodes[seed.randrange(l_size)]
+                    v = k_nodes[random.randrange(k_size)]
+                    w = l_nodes[random.randrange(l_size)]
 
                     # if nodes v and w are disconnected then attempt to connect
                     if not G.has_edge(v, w) and (v != w):

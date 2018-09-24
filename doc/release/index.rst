@@ -8,8 +8,6 @@ API changes
    :maxdepth: 2
 
    release_dev
-   release_2.1
-   release_2.0
    api_1.11
    api_1.10
    api_1.9

@@ -33,7 +33,6 @@ Spectrum
 
    laplacian_spectrum
    adjacency_spectrum
-   modularity_spectrum
 
 Algebraic Connectivity
 ----------------------
@@ -54,13 +53,3 @@ Attribute Matrices
 
    attr_matrix
    attr_sparse_matrix
-
-Modularity Matrices
--------------------
-
-.. automodule:: networkx.linalg.modularitymatrix
-.. autosummary::
-   :toctree: generated/
-
-   modularity_matrix
-   directed_modularity_matrix

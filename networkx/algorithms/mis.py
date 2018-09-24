@@ -13,16 +13,15 @@
 Algorithm to find a maximal (not maximum) independent set.
 
 """
+import random
 import networkx as nx
 from networkx.utils import not_implemented_for
-from networkx.utils import py_random_state
 
 __all__ = ['maximal_independent_set']
 
 
-@py_random_state(2)
 @not_implemented_for('directed')
-def maximal_independent_set(G, nodes=None, seed=None):
+def maximal_independent_set(G, nodes=None):
     """Return a random maximal independent set guaranteed to contain
     a given set of nodes.
 
@@ -38,10 +37,6 @@ def maximal_independent_set(G, nodes=None, seed=None):
     nodes : list or iterable
        Nodes that must be part of the independent set. This set of nodes
        must be independent.
-
-    seed : integer, random_state, or None (default)
-        Indicator of random number generation state.
-        See :ref:`Randomness<randomness>`.
 
     Returns
     -------
@@ -71,7 +66,7 @@ def maximal_independent_set(G, nodes=None, seed=None):
 
     """
     if not nodes:
-        nodes = set([seed.choice(list(G))])
+        nodes = set([random.choice(list(G))])
     else:
         nodes = set(nodes)
     if not nodes.issubset(G):
@@ -84,7 +79,7 @@ def maximal_independent_set(G, nodes=None, seed=None):
     indep_nodes = list(nodes)
     available_nodes = set(G.nodes()).difference(neighbors.union(nodes))
     while available_nodes:
-        node = seed.choice(list(available_nodes))
+        node = random.choice(list(available_nodes))
         indep_nodes.append(node)
         available_nodes.difference_update(list(G.adj[node]) + [node])
     return indep_nodes

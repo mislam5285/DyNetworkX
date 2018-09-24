@@ -28,7 +28,6 @@ Adding and removing nodes and edges
    DiGraph.add_weighted_edges_from
    DiGraph.remove_edge
    DiGraph.remove_edges_from
-   DiGraph.update
    DiGraph.clear
 
 
@@ -84,3 +83,4 @@ Making copies and subgraphs
    DiGraph.subgraph
    DiGraph.edge_subgraph
    DiGraph.reverse
+   DiGraph.fresh_copy

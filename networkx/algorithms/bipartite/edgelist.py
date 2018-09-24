@@ -35,6 +35,7 @@ __all__ = ['generate_edgelist',
 
 import networkx as nx
 from networkx.utils import open_file, make_str, not_implemented_for
+from networkx.convert import _prep_create_using
 
 
 @open_file(1, mode='wb')
@@ -224,7 +225,7 @@ def parse_edgelist(lines, comments='#', delimiter=None,
     --------
     """
     from ast import literal_eval
-    G = nx.empty_graph(0, create_using)
+    G = _prep_create_using(create_using)
     for line in lines:
         p = line.find(comments)
         if p >= 0:

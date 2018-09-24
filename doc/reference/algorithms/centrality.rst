@@ -36,7 +36,6 @@ Current Flow Closeness
    :toctree: generated/
 
    current_flow_closeness_centrality
-   information_centrality
 
 (Shortest Path) Betweenness
 ---------------------------
@@ -98,17 +97,3 @@ Reaching
 
    local_reaching_centrality
    global_reaching_centrality
-
-Percolation
------------
-.. autosummary::
-   :toctree: generated/
-
-   percolation_centrality
-
-Second Order Centrality
------------------------
-.. autosummary::
-   :toctree: generated/
-
-   second_order_centrality

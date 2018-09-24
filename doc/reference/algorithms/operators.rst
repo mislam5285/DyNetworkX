@@ -38,7 +38,6 @@ Operators
 
    cartesian_product
    lexicographic_product
-   rooted_product
    strong_product
    tensor_product
    power
