@@ -1,11 +1,11 @@
 from networkx.classes.graph import Graph
 
+
 class SnapshotGraph(object):
     def __init__(self, **attr):
         self.graph = {}
         self.graph.update(attr)
         self.snapshots = []
-        self.total_snapshots = 0
 
     @property
     def name(self):
@@ -54,7 +54,7 @@ class SnapshotGraph(object):
         3
 
         """
-        return self.total_snapshots
+        return len(self.snapshots)
 
     def __contains__(self, graph):
         """Return True if snap is a graph in the snapshot graph, False otherwise. Use: 'graph in G'.
@@ -67,66 +67,11 @@ class SnapshotGraph(object):
         >>> 2 in G
         True
         """
+
         try:
-            for snapshot in self.snapshots:
-                if self.check_equality(snapshot[0], graph):
-                    return True
-            return False
+            return graph in self.snapshots
         except TypeError:
             return False
-
-    def generator(self, start, end):
-        """
-        Generator used for producing lists of snapshots in a memory efficient way.
-
-        Parameters
-        ----------
-        start : Inclusive index of first desired graph
-        end : Non-inclusive ending index of graph
-
-        Yields
-        -------
-        NetworkX graph object for current index in snapshot graph
-
-        """
-        snaps_traveled = 0
-        snaps = 0
-
-        while snaps < len(self.snapshots):
-            iters = 0
-            # if the snaps traveled plus the current snapshot is less than start
-            # just get the length of the compressed snapshot, and keep moving
-            # - Reduces time complexity to O(len(snapshots))
-
-            if snaps_traveled + self.snapshots[snaps][1] < start:
-                snaps_traveled += self.snapshots[snaps][1]
-                snaps += 1
-            else:
-                while iters < self.snapshots[snaps][1]:
-                    if (snaps_traveled < end) and (snaps_traveled >= start):
-                        yield self.snapshots[snaps][0]
-                    snaps_traveled += 1
-
-                    if snaps_traveled >= end:
-                        return
-                    iters += 1
-                snaps += 1
-
-    def check_equality(self, g1, g2):
-        """
-        Custom equality check between two graphs based on attributes,
-        edge objects and node objects.
-
-        Parameters
-        ----------
-        g1: networkx graph object
-        g2: networkx graph object
-
-        Returns
-        -------
-
-        """
-        return (g1._adj == g2._adj) and (g1.edges == g2.edges) and (g1.nodes == g2.nodes)
 
     def insert(self, g_to_insert, snap_len=None, num_in_seq=None):
         """
@@ -147,108 +92,85 @@ class SnapshotGraph(object):
         None
 
         """
-        snaps_traveled = 0
-        snaps = 0
+        for _ in range(snap_len):
+            self.snapshots.insert(num_in_seq, g_to_insert)
 
-        while snaps < len(self.snapshots):
-            # if next snap length + total traveled thus far is less than slot needed,
-            # then just keep moving
-            if snaps_traveled + self.snapshots[snaps][1] < num_in_seq:
-                snaps_traveled += self.snapshots[snaps][1]
-                snaps += 1
-
-            elif snaps_traveled + self.snapshots[snaps][1] == num_in_seq:
-                self.snapshots.insert(snaps + 1, (g_to_insert, snap_len))
-
-            else:
-                iters = (num_in_seq - snaps_traveled)
-                snap_to_split = self.snapshots[snaps]
-                # change to first part of snap
-                self.snapshots[snaps] = (snap_to_split[0], iters)
-                # insert new snap
-                self.snapshots.insert(snaps + 1, (g_to_insert, snap_len))
-                # insert second part
-                self.snapshots.insert(snaps + 2, (snap_to_split[0], snap_to_split[1] - iters))
-
-                self.total_snapshots += snap_len
-                return
-
-            snaps += 1
-
-    def add_snapshot(self, ebunch, num_in_seq=None, weight='weight', **attr):
+    def add_snapshot(self, ebunch=None, graph=None, num_in_seq=None, weight='weight', **attr):
         """
         Add a snapshot with a bunch of edge values.
 
         Parameters
         ----------
-        ebunch : List of edges to include in time slot of snapshot graph
+        ebunch : List of desired edges to add
+            Each edge in the ebunch list will be included to all added graphs
 
         Returns
         -------
         None
 
         """
-        # add snapshot assumes appendng to end, shoudl I combline with insert method? probs, but also need insert method
-        g = Graph()
-        g.add_weighted_edges_from(ebunch)
+        if not graph:
+            g = Graph()
+            g.add_weighted_edges_from(ebunch)
+        else:
+            g = graph
 
-        if (not num_in_seq) or (num_in_seq == self.total_snapshots + 1):
-            # compress graph
-            if self.snapshots and self.check_equality(g, self.snapshots[len(self.snapshots) - 1][0]):
-                last_snap_tup = self.snapshots[len(self.snapshots) - 1]
-                self.snapshots[len(self.snapshots) - 1] = (last_snap_tup[0], last_snap_tup[1] + 1)
-            else:
-                self.snapshots.append((g, 1))
-            # add one to the length
-            self.total_snapshots += 1
+        if (not num_in_seq) or (num_in_seq == len(self.snapshots) + 1):
+            self.snapshots.append(g)
 
-        elif num_in_seq > self.total_snapshots:
-            # add difference to graph's length
-            last_snap_tup = self.snapshots[len(self.snapshots) - 1]
-            self.snapshots[len(self.snapshots) - 1] = \
-                (last_snap_tup[0],
-                 last_snap_tup[1] + num_in_seq - self.total_snapshots - 1)
-
-            # add in new snapshot
-            self.snapshots.append((g, 1))
-
-            # add difference to the length
-            self.total_snapshots += (num_in_seq - self.total_snapshots)
+        elif num_in_seq > len(self.snapshots):
+            while num_in_seq > len(self.snapshots):
+                self.snapshots.append(g)
         else:
             self.insert(g, snap_len=1, num_in_seq=num_in_seq)
 
     def subgraph(self, nbunch=None, sbunch=None):
         """
-        @ todo what should functionalioty of subgraph be in ssg?
-            sub of the snapshots? <this is it i think> all the snapshots with only some nodes?
+        input a list of nodes and then parse all snapshots and return a snapshot graph of each snapshot only containing those nodes?
         Nodes is a list of nodes that should be found in each subgraph
 
         Parameters
         ----------
-        sbunch : List of indexes for snapshots you are interested in.
-        nbunch : List of nodes you are interested in.
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of subgraphs. It is highly recommended that this list is sequential,
+            however it can be out of order.
+
+        nbunch : List of desired nodes to add
+            Each node in the nbunch list will be included in all subgraphs indexed in sbunch
 
         Returns
         -------
             List of tuples containing the degrees of each node in each snapshot.
         """
 
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
+
+        #if not sbunch or not nbunch:
+        #    raise ValueError('node list({}) and snapshot list({}) must be defined.'.format(nbunch, sbunch))
 
         if len(sbunch) != len(nbunch):
             raise ValueError('node list({}) must be equal in length to number of desired snapshots({})'.format(len(nbunch), len(sbunch)))
 
-        snapshot_graphs = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
+        # only get the indexes wanted
+        if sbunch:
+            graph_list = [graph_list[index - min_index] for index in sbunch]
+
         subgraph = SnapshotGraph()
 
         if (len(nbunch) == 1) and (max_index - min_index) > 1:
-            for snapshot in snapshot_graphs:
-                subgraph.add_snapshot(snapshot.subgraph(nbunch))
+            for snapshot in graph_list:
+                subgraph.add_snapshot(graph=snapshot.subgraph(nbunch))
 
         else:
-            for snapshot, node_list in zip(snapshot_graphs, nbunch):
-                subgraph.add_snapshot(snapshot.subgraph(node_list))
+            for snapshot, node_list in zip(graph_list, nbunch):
+                subgraph.add_snapshot(graph=snapshot.subgraph(node_list))
             subgraph.graph = self.graph
         return subgraph
 
@@ -262,30 +184,34 @@ class SnapshotGraph(object):
             Each snapshot index in this list will be included in the returned list
             of node degrees. It is highly recommended that this list is sequential,
             however it can be out of order.
+
         nbunch : List of desired nodes
             Each node in the nbunch list will be included in the returned list of
             node degrees.
 
         Returns
         -------
-            List of tuples containing the degrees of each node in each snapshot
+            List of DegreeView objects containing the degree of each node, indexed by requested snapshot.
         """
         # returns a list of degrees for each graph snapshot in snapshots
         # use generator to create list of degrees
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
+
         # get all indexes between min and max
-        graph_list = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
         # only get the indexes wanted
-        graph_list = [graph_list[index - min_index] for index in sbunch]
+        if sbunch:
+            graph_list = [graph_list[index - min_index] for index in sbunch]
 
         return_degrees = []
 
         for g in graph_list:
-            node_list = list(g.nodes)
-            for node in node_list:
-                if node in nbunch:
-                    return_degrees.append(node.degree(weight=weight))
+            return_degrees.append(g.degree(nbunch, weight=weight))
 
         return return_degrees
 
@@ -302,13 +228,18 @@ class SnapshotGraph(object):
 
         Returns
         -------
+            A list of of the number of nodes in each requested snapshot.
 
         """
         # returns a list of the number of nodes in each graph in the range
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
         # get all indexes between min and max
-        graph_list = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
 
@@ -316,7 +247,7 @@ class SnapshotGraph(object):
 
     def order(self, sbunch=None):
         """
-        Gets order of each node requested in 'sbunch'.
+        Gets order of each graph requested in 'sbunch'.
 
         Parameters
         ----------
@@ -327,13 +258,18 @@ class SnapshotGraph(object):
 
         Returns
         -------
+            A list of the orders of each snapshot
 
         """
         # returns a list of the order of the graph in the range
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
         # get all indexes between min and max
-        graph_list = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
 
@@ -354,14 +290,19 @@ class SnapshotGraph(object):
             that this list is sequential, however it can be out of order.
 
         Returns
+
         -------
 
         """
         # returns a list of the order of the graph in the range
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
         # get all indexes between min and max
-        graph_list = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
 
@@ -372,17 +313,24 @@ class SnapshotGraph(object):
 
         Parameters
         ----------
-        sbunch: List of indexes for snapshots you are interested in.
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of booleans. It is highly recommended that this list is sequential,
+            however it can be out of order.
 
         Returns
         -------
 
         """
         # returns a list of the order of the graph in the range
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
         # get all indexes between min and max
-        graph_list = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
 
@@ -393,17 +341,24 @@ class SnapshotGraph(object):
 
         Parameters
         ----------
-        sbunch: List of indexes for snapshots you are interested in.
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of booleans. It is highly recommended that this list is sequential,
+            however it can be out of order.
 
         Returns
         -------
 
         """
         # returns a list of the order of the graph in the range
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
         # get all indexes between min and max
-        graph_list = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
 
@@ -414,17 +369,24 @@ class SnapshotGraph(object):
 
         Parameters
         ----------
-        sbunch: List of indexes for snapshots you are interested in.
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of directed graphs. It is highly recommended that this list is sequential,
+            however it can be out of order.
 
         Returns
         -------
 
         """
         # returns a list of the order of the graph in the range
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
         # get all indexes between min and max
-        graph_list = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
 
@@ -435,17 +397,24 @@ class SnapshotGraph(object):
 
         Parameters
         ----------
-        sbunch: List of indexes for snapshots you are interested in.
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of undirected graphs. It is highly recommended that this list is sequential,
+            however it can be out of order.
 
         Returns
         -------
 
         """
         # returns a list of the order of the graph in the range
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
         # get all indexes between min and max
-        graph_list = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
 
@@ -453,10 +422,14 @@ class SnapshotGraph(object):
 
     def size(self, sbunch=None, weight=None):
         """
+        Returns the size of each graph index as specified in sbunch as a list.
 
         Parameters
         ----------
-        sbunch: List of indexes for snapshots you are interested in.
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of sizes. It is highly recommended that this list is sequential,
+            however it can be out of order.
 
         Parameters
         ----------
@@ -468,10 +441,14 @@ class SnapshotGraph(object):
 
         """
         # returns a list of the order of the graph in the range
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
         # get all indexes between min and max
-        graph_list = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
 
@@ -479,23 +456,90 @@ class SnapshotGraph(object):
 
     def get(self, sbunch=None):
         """
-        Gets all graphs in snapshot graph requested in sbunch.
+        Gets all graphs in snapshot graph specified in sbunch.
 
         Parameters
         ----------
-        sbunch
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of graphs. It is highly recommended that this list is sequential,
+            however it can be out of order.
 
         Returns
         -------
 
         """
-        min_index = min(sbunch)
-        max_index = max(sbunch)
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
         # get all indexes between min and max
-        graph_list = list(self.generator(min_index, max_index))
+        graph_list = self.snapshots[min_index:max_index+1]
         # only get the indexes wanted
         graph_list = [graph_list[index - min_index] for index in sbunch]
         return graph_list
 
-# should there be add node and edge functionality?
-# should the be a replace method?
+    def add_nodes_from(self, sbunch=None, nbunch=None, **attrs):
+        """
+        Return a list of tuples containing the degrees of each node in each snapshot
+
+        Parameters
+        ----------
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of node degrees. It is highly recommended that this list is sequential,
+            however it can be out of order.
+        nbunch : List of desired nodes to add
+            Each node in the nbunch list will be added to all graphs indexed in sbunch
+
+        Returns
+        -------
+            List of tuples containing the degrees of each node in each snapshot
+        """
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
+        # get all indexes between min and max
+        graph_list = self.snapshots[min_index:max_index+1]
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
+
+        for g in graph_list:
+                g.add_nodes_from(nbunch, **attrs)
+
+    def add_edges_from(self, sbunch=None, ebunch=None, **attrs):
+        """
+        Return a list of tuples containing the degrees of each node in each snapshot
+
+        Parameters
+        ----------
+        sbunch : List of indexes for desired snapshots
+            Each snapshot index in this list will be included in the returned list
+            of node degrees. It is highly recommended that this list is sequential,
+            however it can be out of order.
+        ebunch : List of desired edges to add
+            Each edge in the ebunch list will be added to all graphs indexed in sbunch
+
+        Returns
+        -------
+            List of tuples containing the degrees of each node in each snapshot
+        """
+        if sbunch:
+            min_index = min(sbunch)
+            max_index = max(sbunch)
+        else:
+            min_index = 0
+            max_index = len(self.snapshots)
+        # get all indexes between min and max
+        graph_list = self.snapshots[min_index:max_index+1]
+        # only get the indexes wanted
+        graph_list = [graph_list[index - min_index] for index in sbunch]
+
+        for g in graph_list:
+                g.add_edges_from(ebunch, **attrs)
+
